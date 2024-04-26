@@ -4,14 +4,16 @@ var pieceSelected = false;
 
 var turn = "white";
 
-var Tile = function(tileX, tileY){
+var Tile = function(tileX, tileY, tileRight, tileUp){
     
     this.tileX = tileX;
     this.tileY = tileY;
-    this.tileLeft = tileX;
-    this.tileRight = tileX+47.625;
-    this.tileTop = tileY;
-    this.tileBottom = tileY+ 47.625;
+    this.tileLeftBound = tileX;
+    this.tileRightBound = tileX+47.625;
+    this.tileTopBound = tileY;
+    this.tileBottomBound = tileY+ 47.625;
+    this.tileRight = tileRight;
+    this.tileUp = tileUp;
     this.piece = null;
     
 };
@@ -54,12 +56,12 @@ Piece.prototype.draw = function(){
         
         var tile = this.getTile();
         
+        text(this.type, tile.tileX+8.5, tile.tileY+27);
+        
         if (this.selected) {
         fill(255, 0, 0, 35); // Red with 100 alpha (semi-transparent)
         rect(tile.tileX, tile.tileY, 47.625, 47.625);
     }
-        
-        text(this.type, tile.tileX+8.5, tile.tileY+27);
         
     }
     
@@ -76,7 +78,7 @@ Piece.prototype.getTile = function(){
 
 Piece.prototype.move = function(newInd, newInd2){
     
-    println("moving");
+    //println("moving");
     
     var newTile = ((rows[newInd])[newInd2]);
     
@@ -94,6 +96,9 @@ Piece.prototype.move = function(newInd, newInd2){
     
     newTile.piece = tempPiece;
     
+    newTile.tileRight = newInd;
+    newTile.tileUp = newInd2;
+    
     if (turn === "white"){
         turn = "black";
     }
@@ -101,7 +106,7 @@ Piece.prototype.move = function(newInd, newInd2){
         turn = "white";
     }
     
-    println("turn: "+turn);
+    //println("turn: "+turn);
     
     
 };
@@ -147,7 +152,7 @@ for (var i = 0; i < 8; i++){
     
     for (var j = 0; j < 8; j++){
         
-        row.push(new Tile((47.625*i)+9, (47.625*j)+9, letters[j]+(8-i)));
+        row.push(new Tile((47.625*i)+9, (47.625*j)+9, i, 7-j));
         
     }
     
@@ -159,6 +164,7 @@ for (var i = 0; i < 8; i++){
 var theRow = 5;
 var theColumn = 4;
 
+//Create Pawns
 for (var i = 0; i < 16; i++){
     
     if (i < 8){
@@ -173,30 +179,41 @@ for (var i = 0; i < 16; i++){
     
 }
 
-var checkValidMove = function(currentPiece, currentTile){
-    
+//Create other pieces
+((rows[2])[0]).piece = (new Piece("bishop", 2,0, "white"));
+((rows[5])[0]).piece = (new Piece("bishop", 5,0, "white"));
+((rows[2])[7]).piece = (new Piece("bishop", 2,7, "black"));
+((rows[5])[7]).piece = (new Piece("bishop", 5,7, "black"));
+
+((rows[0])[0]).piece = (new Piece("rook", 0,0, "white"));
+((rows[7])[0]).piece = (new Piece("rook", 7,0, "white"));
+((rows[0])[7]).piece = (new Piece("rook", 0,7, "black"));
+((rows[7])[7]).piece = (new Piece("rook", 7,7, "black"));
+
+var checkValidMove = function(currentPiece, targetTile){
     
     var type = currentPiece.type;
     var team = currentPiece.team;
     var backwards = 1;
     
-    if (team === "black"){
-        backwards = -1;
-    }
-    
     if (type === "pawn"){
+        
+        if (team === "black"){
+        backwards = -1;
+        }
         
         var pieceInd = currentPiece.tileRight;
         var pieceInd2 = currentPiece.tileUp;
         
-        println("("+pieceInd+","+pieceInd2+")");
+        //println("("+pieceInd+","+pieceInd2+")");
         
         
         for (var i = 0; i < rows.length; i++){
         for (var j = 0; j < (rows[i]).length; j++){
+            
             var checkTile = (((rows[i])[j]));
             
-            if (checkTile === currentTile){
+            if (checkTile === targetTile){
                 
                 if (checkTile.piece === null){
                 if (i === pieceInd && (j === pieceInd2 + (backwards*1) || (currentPiece.firstTurn === true && j === pieceInd2 +(2*backwards)))){
@@ -205,13 +222,13 @@ var checkValidMove = function(currentPiece, currentTile){
                         currentPiece.firstTurn = false;
                     }
                     
-                    println("("+i+","+j+")");
+                    //println("("+i+","+j+")");
                     currentPiece.move(i, j);
                     
                 }
             }
                 else if(checkTile.piece !== null){
-                    println("checking for capture");
+                    //println("checking for capture");
                     
                     if((i === pieceInd+1 || i === pieceInd-1)&&(j === pieceInd2 +(backwards*1))){
                         
@@ -225,6 +242,264 @@ var checkValidMove = function(currentPiece, currentTile){
         }    
     }
     
+    else if(type === "bishop"){
+        
+        var currentTile = currentPiece.getTile();
+        
+        var dx = (targetTile.tileRight - currentTile.tileRight);
+        var dy = (targetTile.tileUp - currentTile.tileUp);
+        
+        if (abs(dx) === abs(dy)){
+            
+            if (dx > 0 && dy > 0){
+                //Up and Right
+                for (var i = 1; i < 8; i++){
+                    //println("i"+i);
+                    var checkTile = (((rows[currentTile.tileRight+i])[currentTile.tileUp+i]));
+                    
+                    if (checkTile.piece !== null){
+                        
+                        if ((checkTile.piece).team !== turn){
+                                
+                            if (checkTile === targetTile){
+                                
+                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                                
+                            }
+                            else{
+                                break;
+                            }
+                            
+                        }
+                        else{
+                            break;
+                        }
+                    
+                    }
+                    else{
+                        
+                        if (checkTile === targetTile){
+                            
+                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                            
+                        }
+                        
+                    }
+                }
+            }
+            
+            else if (dx > 0 && dy < 0){
+                //Down and Right
+                
+                for (var i = 1; i < 8; i++){
+                    //println("i"+i);
+                    var checkTile = (((rows[currentTile.tileRight+i])[currentTile.tileUp-i]));
+                    
+                    if (checkTile.piece !== null){
+                        
+                        if ((checkTile.piece).team !== turn){
+                                
+                            if (checkTile === targetTile){
+                                
+                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                                
+                            }
+                            else{
+                                break;
+                            }
+                            
+                        }
+                        else{
+                            break;
+                        }
+                    
+                    }
+                    else{
+                        
+                        if (checkTile === targetTile){
+                            
+                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                            
+                        }
+                        
+                    }
+                }
+                
+            }
+            else if (dx < 0 && dy > 0){
+                //Up and Left
+                
+                for (var i = 1; i < 8; i++){
+                    //println("i"+i);
+                    var checkTile = (((rows[currentTile.tileRight-i])[currentTile.tileUp+i]));
+                    
+                    if (checkTile.piece !== null){
+                        
+                        if ((checkTile.piece).team !== turn){
+                                
+                            if (checkTile === targetTile){
+                                
+                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                                
+                            }
+                            else{
+                                break;
+                            }
+                            
+                        }
+                        else{
+                            break;
+                        }
+                    
+                    }
+                    else{
+                        
+                        if (checkTile === targetTile){
+                            
+                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                            
+                        }
+                        
+                    }
+                }
+            }
+            else if (dx < 0 && dy < 0){
+                //Down and Left
+                
+                for (var i = 1; i < 8; i++){
+                    //println("i"+i);
+                    var checkTile = (((rows[currentTile.tileRight-i])[currentTile.tileUp-i]));
+                    
+                    if (checkTile.piece !== null){
+                        
+                        if ((checkTile.piece).team !== turn){
+                                
+                            if (checkTile === targetTile){
+                                
+                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                                
+                            }
+                            else{
+                                break;
+                            }
+                            
+                        }
+                        else{
+                            break;
+                        }
+                    
+                    }
+                    else{
+                        
+                        if (checkTile === targetTile){
+                            
+                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                            
+                        }
+                        
+                    }
+                }
+            }
+            
+            
+        }
+        
+    }
+    
+    
+    else if(type === "rook"){
+        var currentTile = currentPiece.getTile();
+        
+        var dx = (targetTile.tileRight - currentTile.tileRight);
+        var dy = (targetTile.tileUp - currentTile.tileUp);
+            
+            
+            if (dx === 0 || dy === 0){
+                
+                if (dy !== 0){
+                for (var i = 1; i < 8; i++){
+                    
+                    var multiplier = 1;
+                    if (dy < 0){
+                        multiplier = -1;
+                    }
+                    var checkTile = (((rows[currentTile.tileRight])[currentTile.tileUp+(i*multiplier)]));
+                    
+                    if (checkTile.piece !== null){
+                        
+                        if ((checkTile.piece).team !== turn){
+                                
+                            if (checkTile === targetTile){
+                                
+                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                                
+                            }
+                            else{
+                                break;
+                            }
+                            
+                        }
+                        else{
+                            break;
+                        }
+                    
+                    }
+                    else{
+                        
+                        if (checkTile === targetTile){
+                            
+                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                            
+                        }
+                        
+                    }
+                }
+                
+                }
+                
+                if (dx !== 0){
+                for (var i = 1; i < 8; i++){
+                    
+                    var multiplier = 1;
+                    if (dx < 0){
+                        multiplier = -1;
+                    }
+                    var checkTile = (((rows[currentTile.tileRight+(i*multiplier)])[currentTile.tileUp]));
+                    
+                    if (checkTile.piece !== null){
+                        
+                        if ((checkTile.piece).team !== turn){
+                                
+                            if (checkTile === targetTile){
+                                
+                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                                
+                            }
+                            else{
+                                break;
+                            }
+                            
+                        }
+                        else{
+                            break;
+                        }
+                    
+                    }
+                    else{
+                        
+                        if (checkTile === targetTile){
+                            
+                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                            
+                        }
+                        
+                    }
+                }
+                
+                }
+                
+            }
+    }
     
 };
 
@@ -241,7 +516,6 @@ var getSelectedPiece = function() {
 };
 
 Piece.prototype.onClick = function(){
-    println("running");
     
     var tile = this.getTile();
     
@@ -277,6 +551,7 @@ Tile.prototype.onClick = function(){
             if (currentPiece !== null){
                 
                 if (currentPiece.selected === true){
+                    //println(i+","+j);
                     checkValidMove(currentPiece, this);
                 }
             }
@@ -290,25 +565,26 @@ Piece.prototype.isMouseInside = function() {
     
     var tile = this.getTile();
     
-    return mouseX > tile.tileLeft &&
-           mouseX < (tile.tileRight) &&
-           mouseY > tile.tileTop &&
-           mouseY < (tile.tileBottom);
+    return mouseX > tile.tileLeftBound &&
+           mouseX < (tile.tileRightBound) &&
+           mouseY > tile.tileTopBound &&
+           mouseY < (tile.tileBottomBound);
 };
 
 Tile.prototype.isMouseInside = function() {
     //println("mouse: "+mouseX+","+mouseY);
     //println("tile: " +this.tileLeft+","+ this.tileRight);
     //println("tile cont.: "+this.tileTop+","+this.tileBottom);
-    return mouseX > this.tileLeft &&
-           mouseX < (this.tileRight) &&
-           mouseY > this.tileTop &&
-           mouseY < (this.tileBottom);
+    return mouseX > this.tileLeftBound &&
+           mouseX < (this.tileRightBound) &&
+           mouseY > this.tileTopBound &&
+           mouseY < (this.tileBottomBound);
     
 };
 
 Piece.prototype.handleMouseClick = function() {
     if (this.isMouseInside()) {
+        
         this.onClick();
     }
 };
@@ -324,7 +600,6 @@ Tile.prototype.handleMouseClick = function() {
 mouseClicked = function() {
     //println("mouse: "+ mouseX+","+mouseY);
     //println("pawn: "+(pawnList[0]).pawnX+","+(pawnList[0].pawnY));
-    
     for (var i = 0; i < rows.length; i++){
         for (var j = 0; j < (rows[i]).length; j++){
             var currentPiece = (((rows[i])[j]).piece);
@@ -371,4 +646,649 @@ draw = function() {
     
 };
 
+//Second
+var pieceSelected = false;
 
+var turn = "white";
+
+var Tile = function(tileX, tileY, tileRight, tileUp){
+    
+    this.tileX = tileX;
+    this.tileY = tileY;
+    this.tileLeftBound = tileX;
+    this.tileRightBound = tileX+47.625;
+    this.tileTopBound = tileY;
+    this.tileBottomBound = tileY+ 47.625;
+    this.tileRight = tileRight;
+    this.tileUp = tileUp;
+    this.piece = null;
+    
+};
+
+var Piece = function(type, tileRight, tileUp, team){
+    
+    this.type = type;
+    this.team = team;
+    this.tileRight = tileRight;
+    this.tileUp = tileUp;
+    this.selected = false;
+    
+};
+
+var rows = [];
+
+Piece.prototype.draw = function(){
+    
+    if (this.team === "white"){
+        
+        stroke(255, 255, 255);
+        strokeWeight(1);
+        fill(255, 255, 255);
+    }
+    else {
+        stroke(0, 0, 0);
+        strokeWeight(1);
+        fill(0, 0, 0);
+    }
+    
+    textSize(12);
+    
+    var tileRight = this.tileRight;
+    var tileUp = this.tileUp;
+    
+    // Check if tile indices are valid
+    
+    
+    if (tileRight !== null && tileUp !== null && rows[tileRight] && (rows[tileRight])[tileUp]) {
+        
+        var tile = this.getTile();
+        
+        text(this.type, tile.tileX+8.5, tile.tileY+27);
+        
+        if (this.selected) {
+        fill(255, 0, 0, 35); // Red with 100 alpha (semi-transparent)
+        rect(tile.tileX, tile.tileY, 47.625, 47.625);
+    }
+        
+    }
+    
+    //rect(this.pawnX, this.pawnY, 47.625, 47.625);
+    
+};
+
+Piece.prototype.getTile = function(){
+    
+    var tile = (rows[this.tileRight])[this.tileUp];
+    return tile;
+    
+};
+
+Piece.prototype.move = function(newInd, newInd2){
+    
+    //println("moving");
+    
+    var newTile = ((rows[newInd])[newInd2]);
+    
+    var oldTile = this.getTile();
+    
+    var tempPiece = oldTile.piece;
+    
+    tempPiece.selected = false;
+    
+    tempPiece.tileRight = newInd;
+    
+    tempPiece.tileUp = newInd2;
+    
+    oldTile.piece = null;
+    
+    newTile.piece = tempPiece;
+    
+    newTile.tileRight = newInd;
+    newTile.tileUp = newInd2;
+    
+    if (turn === "white"){
+        turn = "black";
+    }
+    else{
+        turn = "white";
+    }
+    
+    //println("turn: "+turn);
+    
+    
+};
+
+var boardInit = function(){
+    
+    background(110, 38, 14);
+    noFill();
+    strokeWeight(2);
+    stroke(234, 221, 202);
+    rect(8, 8, 384, 384);
+    
+    strokeWeight(1);
+    
+    stroke(0, 0, 0);
+    
+    line(9, 9, 390, 9);
+    for (var i = 0; i < 8; i++){
+        
+        for (var j = 0; j < 8; j++){
+            
+            if ((j%2)=== 0  && i%2 === 0){
+                fill(234,221,202);
+            }
+            else if (i%2 !== 0 && j%2 !==0){
+                fill(234, 221, 202);
+            } 
+            else {
+                fill(110, 28, 13);
+            }
+            rect((47.625*j)+9,(47.625*i)+9, 47.625, 47.625);
+            
+        }
+    }
+    
+};
+
+var letters = ["a", "b", "c", "d", "e", "f", "g", "h"];
+
+for (var i = 0; i < 8; i++){
+    
+    var row = [];
+    
+    for (var j = 0; j < 8; j++){
+        
+        row.push(new Tile((47.625*i)+9, (47.625*j)+9, i, 7-j));
+        
+    }
+    
+    row = row.reverse();
+    rows.push(row);
+
+}
+
+var theRow = 5;
+var theColumn = 4;
+
+//Create Pawns
+for (var i = 0; i < 16; i++){
+    
+    if (i < 8){
+        
+        ((rows[i])[1]).piece = (new Piece("pawn", i, 1, "white"));
+        (((rows[i])[1]).piece).firstTurn = true;
+    }
+    else{
+        ((rows[i-8])[6]).piece = (new Piece("pawn", i-8, 6, "black"));
+        (((rows[i-8])[6]).piece).firstTurn = true;
+    }
+    
+}
+
+//Create other pieces
+((rows[2])[0]).piece = (new Piece("bishop", 2,0, "white"));
+((rows[5])[0]).piece = (new Piece("bishop", 5,0, "white"));
+((rows[2])[7]).piece = (new Piece("bishop", 2,7, "black"));
+((rows[5])[7]).piece = (new Piece("bishop", 5,7, "black"));
+
+((rows[0])[0]).piece = (new Piece("rook", 0,0, "white"));
+((rows[7])[0]).piece = (new Piece("rook", 7,0, "white"));
+((rows[0])[7]).piece = (new Piece("rook", 0,7, "black"));
+((rows[7])[7]).piece = (new Piece("rook", 7,7, "black"));
+
+var checkValidMove = function(currentPiece, targetTile){
+    
+    var type = currentPiece.type;
+    var team = currentPiece.team;
+    var backwards = 1;
+    
+    if (type === "pawn"){
+        
+        if (team === "black"){
+        backwards = -1;
+        }
+        
+        var pieceInd = currentPiece.tileRight;
+        var pieceInd2 = currentPiece.tileUp;
+        
+        //println("("+pieceInd+","+pieceInd2+")");
+        
+        
+        for (var i = 0; i < rows.length; i++){
+        for (var j = 0; j < (rows[i]).length; j++){
+            
+            var checkTile = (((rows[i])[j]));
+            
+            if (checkTile === targetTile){
+                
+                if (checkTile.piece === null){
+                if (i === pieceInd && (j === pieceInd2 + (backwards*1) || (currentPiece.firstTurn === true && j === pieceInd2 +(2*backwards)))){
+                    
+                    if (currentPiece.firstTurn === true){
+                        currentPiece.firstTurn = false;
+                    }
+                    
+                    //println("("+i+","+j+")");
+                    currentPiece.move(i, j);
+                    
+                }
+            }
+                else if(checkTile.piece !== null){
+                    //println("checking for capture");
+                    
+                    if((i === pieceInd+1 || i === pieceInd-1)&&(j === pieceInd2 +(backwards*1))){
+                        
+                        currentPiece.move(i, j);
+                        
+                    }
+                    
+                }
+            }
+        }    
+        }    
+    }
+    
+    else if(type === "bishop"){
+        
+        var currentTile = currentPiece.getTile();
+        
+        var dx = (targetTile.tileRight - currentTile.tileRight);
+        var dy = (targetTile.tileUp - currentTile.tileUp);
+        
+        if (abs(dx) === abs(dy)){
+            
+            if (dx > 0 && dy > 0){
+                //Up and Right
+                for (var i = 1; i < 8; i++){
+                    //println("i"+i);
+                    var checkTile = (((rows[currentTile.tileRight+i])[currentTile.tileUp+i]));
+                    
+                    if (checkTile.piece !== null){
+                        
+                        if ((checkTile.piece).team !== turn){
+                                
+                            if (checkTile === targetTile){
+                                
+                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                                
+                            }
+                            else{
+                                break;
+                            }
+                            
+                        }
+                        else{
+                            break;
+                        }
+                    
+                    }
+                    else{
+                        
+                        if (checkTile === targetTile){
+                            
+                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                            
+                        }
+                        
+                    }
+                }
+            }
+            
+            else if (dx > 0 && dy < 0){
+                //Down and Right
+                
+                for (var i = 1; i < 8; i++){
+                    //println("i"+i);
+                    var checkTile = (((rows[currentTile.tileRight+i])[currentTile.tileUp-i]));
+                    
+                    if (checkTile.piece !== null){
+                        
+                        if ((checkTile.piece).team !== turn){
+                                
+                            if (checkTile === targetTile){
+                                
+                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                                
+                            }
+                            else{
+                                break;
+                            }
+                            
+                        }
+                        else{
+                            break;
+                        }
+                    
+                    }
+                    else{
+                        
+                        if (checkTile === targetTile){
+                            
+                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                            
+                        }
+                        
+                    }
+                }
+                
+            }
+            else if (dx < 0 && dy > 0){
+                //Up and Left
+                
+                for (var i = 1; i < 8; i++){
+                    //println("i"+i);
+                    var checkTile = (((rows[currentTile.tileRight-i])[currentTile.tileUp+i]));
+                    
+                    if (checkTile.piece !== null){
+                        
+                        if ((checkTile.piece).team !== turn){
+                                
+                            if (checkTile === targetTile){
+                                
+                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                                
+                            }
+                            else{
+                                break;
+                            }
+                            
+                        }
+                        else{
+                            break;
+                        }
+                    
+                    }
+                    else{
+                        
+                        if (checkTile === targetTile){
+                            
+                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                            
+                        }
+                        
+                    }
+                }
+            }
+            else if (dx < 0 && dy < 0){
+                //Down and Left
+                
+                for (var i = 1; i < 8; i++){
+                    //println("i"+i);
+                    var checkTile = (((rows[currentTile.tileRight-i])[currentTile.tileUp-i]));
+                    
+                    if (checkTile.piece !== null){
+                        
+                        if ((checkTile.piece).team !== turn){
+                                
+                            if (checkTile === targetTile){
+                                
+                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                                
+                            }
+                            else{
+                                break;
+                            }
+                            
+                        }
+                        else{
+                            break;
+                        }
+                    
+                    }
+                    else{
+                        
+                        if (checkTile === targetTile){
+                            
+                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                            
+                        }
+                        
+                    }
+                }
+            }
+            
+            
+        }
+        
+    }
+    
+    
+    else if(type === "rook"){
+        var currentTile = currentPiece.getTile();
+        
+        var dx = (targetTile.tileRight - currentTile.tileRight);
+        var dy = (targetTile.tileUp - currentTile.tileUp);
+            
+            
+            if (dx === 0 || dy === 0){
+                
+                if (dy !== 0){
+                for (var i = 1; i < 8; i++){
+                    
+                    var multiplier = 1;
+                    if (dy < 0){
+                        multiplier = -1;
+                    }
+                    var checkTile = (((rows[currentTile.tileRight])[currentTile.tileUp+(i*multiplier)]));
+                    
+                    if (checkTile.piece !== null){
+                        
+                        if ((checkTile.piece).team !== turn){
+                                
+                            if (checkTile === targetTile){
+                                
+                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                                
+                            }
+                            else{
+                                break;
+                            }
+                            
+                        }
+                        else{
+                            break;
+                        }
+                    
+                    }
+                    else{
+                        
+                        if (checkTile === targetTile){
+                            
+                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                            
+                        }
+                        
+                    }
+                }
+                
+                }
+                
+                if (dx !== 0){
+                for (var i = 1; i < 8; i++){
+                    
+                    var multiplier = 1;
+                    if (dx < 0){
+                        multiplier = -1;
+                    }
+                    var checkTile = (((rows[currentTile.tileRight+(i*multiplier)])[currentTile.tileUp]));
+                    
+                    if (checkTile.piece !== null){
+                        
+                        if ((checkTile.piece).team !== turn){
+                                
+                            if (checkTile === targetTile){
+                                
+                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                                
+                            }
+                            else{
+                                break;
+                            }
+                            
+                        }
+                        else{
+                            break;
+                        }
+                    
+                    }
+                    else{
+                        
+                        if (checkTile === targetTile){
+                            
+                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
+                            
+                        }
+                        
+                    }
+                }
+                
+                }
+                
+            }
+    }
+    
+};
+
+var getSelectedPiece = function() {
+    for (var i = 0; i < rows.length; i++) {
+        for (var j = 0; j < rows[i].length; j++) {
+            var currentPiece = rows[i][j].piece;
+            if (currentPiece && currentPiece.selected) {
+                return currentPiece;
+            }
+        }
+    }
+    return null;
+};
+
+Piece.prototype.onClick = function(){
+    
+    var tile = this.getTile();
+    
+    if (turn === this.team){
+    for (var i = 0; i < rows.length; i++) {
+        for (var j = 0; j < rows[i].length; j++) {
+            if (rows[i][j].piece !== null) {
+                rows[i][j].piece.selected = false;
+            }
+        }
+    }
+
+    // Select the current piece
+    
+    this.selected = !this.selected;
+    }
+    else if(turn !== this.team){
+        var selectedPiece = getSelectedPiece();
+        
+        if (selectedPiece) {
+            checkValidMove(selectedPiece, tile);
+        }
+    }
+};
+
+Tile.prototype.onClick = function(){
+    
+    //Check if a piece is selected already
+    for (var i = 0; i < rows.length; i++){
+        for (var j = 0; j < (rows[i]).length; j++){
+            var currentPiece = (((rows[i])[j]).piece);
+            
+            if (currentPiece !== null){
+                
+                if (currentPiece.selected === true){
+                    //println(i+","+j);
+                    checkValidMove(currentPiece, this);
+                }
+            }
+        }
+    }
+    
+};
+
+Piece.prototype.isMouseInside = function() {
+    //println(this.pawnX +","+this.pawnY);
+    
+    var tile = this.getTile();
+    
+    return mouseX > tile.tileLeftBound &&
+           mouseX < (tile.tileRightBound) &&
+           mouseY > tile.tileTopBound &&
+           mouseY < (tile.tileBottomBound);
+};
+
+Tile.prototype.isMouseInside = function() {
+    //println("mouse: "+mouseX+","+mouseY);
+    //println("tile: " +this.tileLeft+","+ this.tileRight);
+    //println("tile cont.: "+this.tileTop+","+this.tileBottom);
+    return mouseX > this.tileLeftBound &&
+           mouseX < (this.tileRightBound) &&
+           mouseY > this.tileTopBound &&
+           mouseY < (this.tileBottomBound);
+    
+};
+
+Piece.prototype.handleMouseClick = function() {
+    if (this.isMouseInside()) {
+        
+        this.onClick();
+    }
+};
+
+Tile.prototype.handleMouseClick = function() {
+
+    if (this.isMouseInside()) {
+        this.onClick();
+    }
+    
+};
+
+mouseClicked = function() {
+    //println("mouse: "+ mouseX+","+mouseY);
+    //println("pawn: "+(pawnList[0]).pawnX+","+(pawnList[0].pawnY));
+    for (var i = 0; i < rows.length; i++){
+        for (var j = 0; j < (rows[i]).length; j++){
+            var currentPiece = (((rows[i])[j]).piece);
+            
+            if (currentPiece !== null){
+                
+                currentPiece.handleMouseClick();
+                
+            }
+            else {
+                
+                ((rows[i])[j]).handleMouseClick();
+                
+            }
+            
+        }
+    }
+    //if (btn1.isMouseInside()){
+        //btn1.handleMouseClick();
+    //}
+};
+
+//var theRow = 5;
+//var theColumn = 1;
+
+draw = function() {
+    
+    boardInit();
+    fill(255, 255, 255);
+    
+    //ellipse((rows[theRow])[theColumn].tileX+(47.625/2), (rows[theRow])[theColumn].tileY+(47.625/2), 20, 20);
+    
+    for (var i = 0; i < rows.length; i++){
+        for (var j = 0; j < (rows[i]).length; j++){
+            
+            if ((((rows[i])[j]).piece) !== null){
+                (((rows[i])[j]).piece).draw();
+            }
+            
+        }
+    }
+    
+    
+    
+};
