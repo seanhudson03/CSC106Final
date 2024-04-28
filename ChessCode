@@ -1,9 +1,17 @@
 
-//Second
-var pieceSelected = false;
-
+//Turn variable
 var turn = "white";
 
+//Flag variable to prevent infinite recursion
+var simulation = false;
+
+//Governs end of game
+var gameEnd = false;
+
+//Flag variable to prevent infinite recursion
+var checkingCheckmate = false;
+
+//Tile constructor
 var Tile = function(tileX, tileY, tileRight, tileUp){
     
     this.tileX = tileX;
@@ -18,6 +26,7 @@ var Tile = function(tileX, tileY, tileRight, tileUp){
     
 };
 
+//Piece Constructor
 var Piece = function(type, tileRight, tileUp, team){
     
     this.type = type;
@@ -28,8 +37,10 @@ var Piece = function(type, tileRight, tileUp, team){
     
 };
 
+//Declare tile rows
 var rows = [];
 
+//Draw pieces
 Piece.prototype.draw = function(){
     
     if (this.team === "white"){
@@ -56,12 +67,53 @@ Piece.prototype.draw = function(){
         
         var tile = this.getTile();
         
-        text(this.type, tile.tileX+8.5, tile.tileY+27);
-        
         if (this.selected) {
         fill(255, 0, 0, 35); // Red with 100 alpha (semi-transparent)
         rect(tile.tileX, tile.tileY, 47.625, 47.625);
     }
+        
+        ellipse(tile.tileX+24, tile.tileY+24, 40, 40);
+        
+        if (this.team === "white"){
+            stroke(0, 0, 0);
+            strokeWeight(1);
+            fill(0, 0, 0);
+            
+        }
+        else {
+            stroke(255, 255, 255);
+            strokeWeight(1);
+            fill(255, 255, 255);
+        }
+        
+        var textAdjust;
+        if (this.type === "rook" || this.type === "king"){
+            
+            textAdjust = 12;
+            
+        }
+        else if(this.type === "queen"){
+            
+            textAdjust = 7;
+            
+        }
+        else if(this.type === "bishop"){
+            
+            textAdjust = 6;
+            
+        }
+        else if(this.type === "knight"){
+            
+            textAdjust = 8;
+            
+        }
+        else if(this.type === "pawn"){
+            
+            textAdjust = 9;
+            
+        }
+        
+        text(this.type, tile.tileX+textAdjust, tile.tileY+27);
         
     }
     
@@ -69,6 +121,7 @@ Piece.prototype.draw = function(){
     
 };
 
+//Function to return the current tile of a piece
 Piece.prototype.getTile = function(){
     
     var tile = (rows[this.tileRight])[this.tileUp];
@@ -76,9 +129,598 @@ Piece.prototype.getTile = function(){
     
 };
 
-Piece.prototype.move = function(newInd, newInd2){
+//Function to find the current team's king
+var findKing = function(){
     
-    //println("moving");
+    var kingPiece = null;
+    
+    for (var i = 0; i < rows.length; i++) {
+        for (var j = 0; j < rows[i].length; j++) {
+            
+            var checkTile = rows[i][j];
+            
+            if (checkTile.piece !== null) {
+                
+                var checkPiece = checkTile.piece;
+                
+                if (checkPiece.team === turn && checkPiece.type === "king"){
+                    
+                    return checkTile;
+                    
+                }
+            }
+        }
+    }
+};
+
+//Ruleset for pawns
+var pawnCheck = function(currentPiece, targetTile){
+    
+    var type = currentPiece.type;
+    var team = currentPiece.team;
+    var backwards = 1;
+    var turn = currentPiece.team;
+    
+    if (team === "black"){
+        backwards = -1;
+        }
+        
+        var tile = currentPiece.getTile();
+        
+        if(targetTile.tileUp === tile.tileUp+(1*backwards)){
+            
+            if (targetTile.piece === null && targetTile.tileRight=== tile.tileRight){
+                return true;
+            }
+            else if (targetTile.piece !== null){
+                if ((targetTile.piece.team !== turn) && (targetTile.tileRight === tile.tileRight + 1 || targetTile.tileRight === tile.tileRight - 1)){
+                    return true;
+                }
+            }
+            
+        }
+        
+        else if((targetTile.tileUp === tile.tileUp+(2*backwards))&&currentPiece.firstTurn === true && targetTile.tileRight === tile.tileRight){
+            
+            return true;
+        }
+    
+};
+
+//Ruleset for bishops
+var bishopCheck = function(currentPiece, targetTile){
+    
+    var type = currentPiece.type;
+    var team = currentPiece.team;
+    var turn = currentPiece.team;
+    
+    var currentTile = currentPiece.getTile();
+        
+        var dx = (targetTile.tileRight - currentTile.tileRight);
+        var dy = (targetTile.tileUp - currentTile.tileUp);
+        
+        if (abs(dx) === abs(dy)){
+            
+            if (dx > 0 && dy > 0){
+                //Up and Right
+                for (var i = 1; i < 8; i++){
+                    
+                    var checkTile = (((rows[currentTile.tileRight+i])[currentTile.tileUp+i]));
+                    
+                    if (checkTile.piece !== null){
+                        
+                        if ((checkTile.piece).team !== turn){
+                                
+                            if (checkTile === targetTile){
+                                
+                                return true;
+                                
+                            }
+                            else{
+                                break;
+                            }
+                            
+                        }
+                        else{
+                            break;
+                        }
+                    
+                    }
+                    else{
+                        
+                        if (checkTile === targetTile){
+                            
+                            return true;
+                            
+                        }
+                        
+                    }
+                }
+            }
+            
+            else if (dx > 0 && dy < 0){
+                //Down and Right
+                
+                for (var i = 1; i < 8; i++){
+                    
+                    var checkTile = (((rows[currentTile.tileRight+i])[currentTile.tileUp-i]));
+                    
+                    if (checkTile.piece !== null){
+                        
+                        if ((checkTile.piece).team !== turn){
+                                
+                            if (checkTile === targetTile){
+                                
+                                return true;
+                                
+                            }
+                            else{
+                                break;
+                            }
+                            
+                        }
+                        else{
+                            break;
+                        }
+                    
+                    }
+                    else{
+                        
+                        if (checkTile === targetTile){
+                            
+                            return true;
+                            
+                        }
+                        
+                    }
+                }
+                
+            }
+            else if (dx < 0 && dy > 0){
+                //Up and Left
+                
+                for (var i = 1; i < 8; i++){
+                    
+                    var checkTile = (((rows[currentTile.tileRight-i])[currentTile.tileUp+i]));
+                    
+                    if (checkTile.piece !== null){
+                        
+                        if ((checkTile.piece).team !== turn){
+                                
+                            if (checkTile === targetTile){
+                                
+                                return true;
+                                
+                            }
+                            else{
+                                break;
+                            }
+                            
+                        }
+                        else{
+                            break;
+                        }
+                    
+                    }
+                    else{
+                        
+                        if (checkTile === targetTile){
+                            
+                            return true;
+                            
+                        }
+                        
+                    }
+                }
+            }
+            else if (dx < 0 && dy < 0){
+                //Down and Left
+                
+                for (var i = 1; i < 8; i++){
+                    
+                    var checkTile = (((rows[currentTile.tileRight-i])[currentTile.tileUp-i]));
+                    
+                    if (checkTile.piece !== null){
+                        
+                        if ((checkTile.piece).team !== turn){
+                                
+                            if (checkTile === targetTile){
+                                
+                                return true;
+                                
+                            }
+                            else{
+                                break;
+                            }
+                            
+                        }
+                        else{
+                            break;
+                        }
+                    
+                    }
+                    else{
+                        
+                        if (checkTile === targetTile){
+                            
+                            return true;
+                            
+                        }
+                        
+                    }
+                }
+            }
+            
+            
+        }
+    
+};
+
+//Ruleset for rooks
+var rookCheck = function(currentPiece, targetTile){
+    
+    var type = currentPiece.type;
+    var team = currentPiece.team;
+    var turn = currentPiece.team;
+    
+    var currentTile = currentPiece.getTile();
+        
+        var dx = (targetTile.tileRight - currentTile.tileRight);
+        var dy = (targetTile.tileUp - currentTile.tileUp);
+            
+            
+            if (dx === 0 || dy === 0){
+                
+                if (dy !== 0){
+                for (var i = 1; i < 8; i++){
+                    
+                    var multiplier = 1;
+                    if (dy < 0){
+                        multiplier = -1;
+                    }
+                    var checkTile = (((rows[currentTile.tileRight])[currentTile.tileUp+(i*multiplier)]));
+                    
+                    if (checkTile.piece !== null){
+                        
+                        if ((checkTile.piece).team !== turn){
+                                
+                            if (checkTile === targetTile){
+                                
+                                return true;
+                                
+                            }
+                            else{
+                                break;
+                            }
+                            
+                        }
+                        else{
+                            break;
+                        }
+                    
+                    }
+                    else{
+                        
+                        if (checkTile === targetTile){
+                            
+                            return true;
+                            
+                        }
+                        
+                    }
+                }
+                
+                }
+                
+                if (dx !== 0){
+                for (var i = 1; i < 8; i++){
+                    
+                    var multiplier = 1;
+                    if (dx < 0){
+                        multiplier = -1;
+                    }
+                    var checkTile = (((rows[currentTile.tileRight+(i*multiplier)])[currentTile.tileUp]));
+                    
+                    if (checkTile.piece !== null){
+                        
+                        if ((checkTile.piece).team !== turn){
+                                
+                            if (checkTile === targetTile){
+                                
+                                return true;
+                                
+                            }
+                            else{
+                                break;
+                            }
+                            
+                        }
+                        else{
+                            break;
+                        }
+                    
+                    }
+                    else{
+                        
+                        if (checkTile === targetTile){
+                            
+                            return true;
+                            
+                        }
+                        
+                    }
+                }
+                }
+            }
+    
+};
+
+//Ruleset for knights
+var knightCheck = function(currentPiece, targetTile){
+    
+    var type = currentPiece.type;
+    var team = currentPiece.team;
+    var turn = currentPiece.team;
+    
+    var currentTile = currentPiece.getTile();
+        
+        var dx = abs(targetTile.tileRight - currentTile.tileRight);
+        var dy = abs(targetTile.tileUp - currentTile.tileUp);
+        
+        if ((dx === 2 && dy === 1) || (dx === 1 && dy === 2)){
+            
+            if (targetTile.piece !== null){
+                
+                if ((targetTile.piece).team !== turn){
+                    return true;
+                }
+                
+            }
+            else {
+                return true;
+            }
+            
+        }
+    
+};
+
+//Ruleset for kings
+var kingCheck = function(currentPiece, targetTile){
+    
+    var type = currentPiece.type;
+    var team = currentPiece.team;
+    var turn = currentPiece.team;
+    
+    var currentTile = currentPiece.getTile();
+        
+    var dx = abs(targetTile.tileRight - currentTile.tileRight);
+    var dy = abs(targetTile.tileUp - currentTile.tileUp);
+    
+    if ((dx <= 1 && dy <= 1) && !(dx === 0 && dy === 0)){
+        if (targetTile.piece !== null){
+            if ((targetTile.piece).team !== turn){
+                
+                return true;
+                
+            }
+        }
+        else{
+            return true;
+        }
+    }
+    
+};
+
+//Function determining if an attempted move is legal
+var checkValidMove = function(currentPiece, targetTile){
+    
+    var type = currentPiece.type;
+    
+    if (type === "pawn"){
+        
+        if (pawnCheck(currentPiece, targetTile) && currentPiece.simulateMove(currentPiece, targetTile)){
+            
+            currentPiece.move(targetTile.tileRight, targetTile.tileUp);
+            
+        }
+        
+    }
+    
+    else if(type === "bishop"){
+        
+        if (bishopCheck(currentPiece, targetTile)&& currentPiece.simulateMove(currentPiece, targetTile)){
+            currentPiece.move(targetTile.tileRight, targetTile.tileUp);
+        }
+        
+    }
+    
+    else if(type === "rook"){
+        
+        if (rookCheck(currentPiece, targetTile)&& currentPiece.simulateMove(currentPiece, targetTile)){
+            currentPiece.move(targetTile.tileRight, targetTile.tileUp);
+        }
+        
+    }
+    
+    else if (type === "queen"){
+        
+        if ((rookCheck(currentPiece, targetTile) || bishopCheck(currentPiece, targetTile))&& currentPiece.simulateMove(currentPiece, targetTile)){
+            currentPiece.move(targetTile.tileRight, targetTile.tileUp);
+        }
+        
+    }
+    
+    else if(type === "knight"){
+        
+        if (knightCheck(currentPiece, targetTile)&& currentPiece.simulateMove(currentPiece, targetTile)){
+            
+            currentPiece.move(targetTile.tileRight, targetTile.tileUp);
+            
+        }
+        
+    }
+    
+    else if(type === "king"){
+        
+        //Don't forget to add in a check for check
+        if (kingCheck(currentPiece, targetTile)&& currentPiece.simulateMove(currentPiece, targetTile)&& currentPiece.simulateMove(currentPiece, targetTile)){
+            
+            currentPiece.move(targetTile.tileRight, targetTile.tileUp);
+            
+        }
+        
+    }
+    
+};
+
+//Function to determine if the current team's king is in check
+var isInCheck = function(){
+    
+    var kingTile = findKing();
+    var inCheck = false;
+    
+    for (var i = 0; i < rows.length; i++) {
+        for (var j = 0; j < rows[i].length; j++) {
+            
+            var checkTile = (rows[i])[j];
+            
+            if (checkTile.piece !== null) {
+                
+                var checkPiece = checkTile.piece;
+                
+                if (checkPiece.team !== turn){
+                    
+                    if (checkPiece.type === "pawn"){
+                        
+                        if (pawnCheck(checkPiece, kingTile)){
+                            
+                            
+                            inCheck = true;
+                        }
+                    }
+                    else if (checkPiece.type === "rook"){
+                        
+                        if (rookCheck(checkPiece, kingTile)){
+                            
+                            inCheck = true;
+                        }
+                    }
+                    else if (checkPiece.type === "knight"){
+                        
+                        if (knightCheck(checkPiece, kingTile)){
+                            
+                            inCheck = true;
+                        }
+                    }
+                    else if (checkPiece.type === "bishop"){
+                        
+                        if (bishopCheck(checkPiece, kingTile)){
+                            
+                            inCheck = true;
+                        }
+                    }
+                    else if (checkPiece.type === "queen"){
+                        
+                        if (rookCheck(checkPiece, kingTile) || bishopCheck(checkPiece, kingTile)){
+                            
+                            inCheck = true;
+                        }
+                    }
+                    else if (checkPiece.type === "king"){
+                        if (kingCheck(checkPiece, kingTile)){
+                            
+                            inCheck = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return inCheck;
+    
+};
+
+//Function to determine if the current king has lost
+var isCheckmate = function(){
+    
+    checkingCheckmate = true;
+    var currentTurn = turn;
+    var movesPossible = false;
+    
+    for (var i = 0; i < rows.length; i++) {
+        
+        for (var j = 0; j < rows[i].length; j++) {
+            
+            var piece = null;
+            
+            if ((rows[i])[j].piece !== null){
+                piece = (rows[i])[j].piece;
+            }
+            
+            // Consider only pieces of the current player's team
+            if (piece !== null && piece.team === currentTurn) {
+                
+                // Check all possible moves for the current piece
+                for (var x = 0; x < rows.length; x++) {
+                    for (var y = 0; y < rows[x].length; y++) {
+                        
+                        var targetTile = (rows[x])[y];
+                        
+                        // If the move is valid and doesn't result in check, it's not checkmate               
+                        if (piece.type === "pawn"){
+                            if (pawnCheck(piece, targetTile) && piece.simulateMove(piece, targetTile)) {
+                             movesPossible = true;// Not checkmate
+                            
+                        }
+                        }
+                        else if(piece.type === "rook"){
+                            if (rookCheck(piece, targetTile) && piece.simulateMove(piece, targetTile)) {
+                             movesPossible = true;// Not checkmate
+                            
+                        }
+                        }
+                        else if(piece.type === "knight"){
+                            if (knightCheck(piece, targetTile) && piece.simulateMove(piece, targetTile)) {
+                             movesPossible = true;// Not checkmate
+                            
+                        }
+                        }
+                        else if(piece.type === "bishop"){
+                            if (bishopCheck(piece, targetTile) && piece.simulateMove(piece, targetTile)) {
+                             movesPossible = true;// Not checkmate
+                            
+                        }
+                        }
+                        else if(piece.type === "queen"){
+                            if ((bishopCheck(piece, targetTile)||rookCheck(piece, targetTile)) && piece.simulateMove(piece, targetTile)) {
+                             movesPossible = true;// Not checkmate
+                            
+                        }
+                        }
+                        else if(piece.type === "king"){
+                            
+                            if (kingCheck(piece, targetTile) && piece.simulateMove(piece, targetTile)) {
+                            
+                             movesPossible = true;// Not checkmate
+                            
+                        }
+                        }
+                        
+                    }
+                }
+            }
+        }
+    }
+    // If no valid move can get the king out of check, it's checkmate
+    
+    
+    return !movesPossible;
+    
+};
+
+//Function to move pieces
+Piece.prototype.move = function(newInd, newInd2){
     
     var newTile = ((rows[newInd])[newInd2]);
     
@@ -106,11 +748,54 @@ Piece.prototype.move = function(newInd, newInd2){
         turn = "white";
     }
     
-    //println("turn: "+turn);
+    if (this.firstTurn === true){
+        this.firstTurn = false;
+    }
     
+    if (simulation === false){
+        checkingCheckmate = false;
+    }
+    
+    //isInCheck();
+   
+};
+
+//Function to check if an attempted move will leave the king in check, making it illegal
+Piece.prototype.simulateMove = function(piece, targetTile) {
+    // Store the original state
+    simulation = true;
+    var originalTurn = turn;
+    var originalTile = piece.getTile();
+    var originalPieceAtTarget = null;
+    
+    if (targetTile.piece !== null){
+        originalPieceAtTarget = targetTile.piece;
+    }
+    
+    // Apply the move
+    piece.move(targetTile.tileRight, targetTile.tileUp);
+
+    // Check the consequences
+    
+    turn = originalTurn;
+    var isInCheckAfterMove = isInCheck();
+    
+    // Revert the state
+    piece.move(originalTile.tileRight, originalTile.tileUp);
+    
+    if (originalPieceAtTarget !== null){
+        
+        targetTile.piece = originalPieceAtTarget;
+    
+    }
+    
+    turn = originalTurn;
+    simulation = false;
+    return !isInCheckAfterMove;
     
 };
 
+//Function to draw the gameboard
 var boardInit = function(){
     
     background(110, 38, 14);
@@ -144,8 +829,7 @@ var boardInit = function(){
     
 };
 
-var letters = ["a", "b", "c", "d", "e", "f", "g", "h"];
-
+//Create columns as array elements of rows array
 for (var i = 0; i < 8; i++){
     
     var row = [];
@@ -156,23 +840,22 @@ for (var i = 0; i < 8; i++){
         
     }
     
+    //Reverse the column, such that lower values are on the bottom and higher values are on top
     row = row.reverse();
     rows.push(row);
 
 }
 
-var theRow = 5;
-var theColumn = 4;
-
 //Create Pawns
 for (var i = 0; i < 16; i++){
     
     if (i < 8){
-        
+        //Create white pawns
         ((rows[i])[1]).piece = (new Piece("pawn", i, 1, "white"));
         (((rows[i])[1]).piece).firstTurn = true;
     }
     else{
+        //Create black pawns
         ((rows[i-8])[6]).piece = (new Piece("pawn", i-8, 6, "black"));
         (((rows[i-8])[6]).piece).firstTurn = true;
     }
@@ -180,329 +863,34 @@ for (var i = 0; i < 16; i++){
 }
 
 //Create other pieces
+
+//Bishops
 ((rows[2])[0]).piece = (new Piece("bishop", 2,0, "white"));
 ((rows[5])[0]).piece = (new Piece("bishop", 5,0, "white"));
 ((rows[2])[7]).piece = (new Piece("bishop", 2,7, "black"));
 ((rows[5])[7]).piece = (new Piece("bishop", 5,7, "black"));
 
+//Rooks
 ((rows[0])[0]).piece = (new Piece("rook", 0,0, "white"));
 ((rows[7])[0]).piece = (new Piece("rook", 7,0, "white"));
 ((rows[0])[7]).piece = (new Piece("rook", 0,7, "black"));
 ((rows[7])[7]).piece = (new Piece("rook", 7,7, "black"));
 
-var checkValidMove = function(currentPiece, targetTile){
-    
-    var type = currentPiece.type;
-    var team = currentPiece.team;
-    var backwards = 1;
-    
-    if (type === "pawn"){
-        
-        if (team === "black"){
-        backwards = -1;
-        }
-        
-        var pieceInd = currentPiece.tileRight;
-        var pieceInd2 = currentPiece.tileUp;
-        
-        //println("("+pieceInd+","+pieceInd2+")");
-        
-        
-        for (var i = 0; i < rows.length; i++){
-        for (var j = 0; j < (rows[i]).length; j++){
-            
-            var checkTile = (((rows[i])[j]));
-            
-            if (checkTile === targetTile){
-                
-                if (checkTile.piece === null){
-                if (i === pieceInd && (j === pieceInd2 + (backwards*1) || (currentPiece.firstTurn === true && j === pieceInd2 +(2*backwards)))){
-                    
-                    if (currentPiece.firstTurn === true){
-                        currentPiece.firstTurn = false;
-                    }
-                    
-                    //println("("+i+","+j+")");
-                    currentPiece.move(i, j);
-                    
-                }
-            }
-                else if(checkTile.piece !== null){
-                    //println("checking for capture");
-                    
-                    if((i === pieceInd+1 || i === pieceInd-1)&&(j === pieceInd2 +(backwards*1))){
-                        
-                        currentPiece.move(i, j);
-                        
-                    }
-                    
-                }
-            }
-        }    
-        }    
-    }
-    
-    else if(type === "bishop"){
-        
-        var currentTile = currentPiece.getTile();
-        
-        var dx = (targetTile.tileRight - currentTile.tileRight);
-        var dy = (targetTile.tileUp - currentTile.tileUp);
-        
-        if (abs(dx) === abs(dy)){
-            
-            if (dx > 0 && dy > 0){
-                //Up and Right
-                for (var i = 1; i < 8; i++){
-                    //println("i"+i);
-                    var checkTile = (((rows[currentTile.tileRight+i])[currentTile.tileUp+i]));
-                    
-                    if (checkTile.piece !== null){
-                        
-                        if ((checkTile.piece).team !== turn){
-                                
-                            if (checkTile === targetTile){
-                                
-                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                                
-                            }
-                            else{
-                                break;
-                            }
-                            
-                        }
-                        else{
-                            break;
-                        }
-                    
-                    }
-                    else{
-                        
-                        if (checkTile === targetTile){
-                            
-                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                            
-                        }
-                        
-                    }
-                }
-            }
-            
-            else if (dx > 0 && dy < 0){
-                //Down and Right
-                
-                for (var i = 1; i < 8; i++){
-                    //println("i"+i);
-                    var checkTile = (((rows[currentTile.tileRight+i])[currentTile.tileUp-i]));
-                    
-                    if (checkTile.piece !== null){
-                        
-                        if ((checkTile.piece).team !== turn){
-                                
-                            if (checkTile === targetTile){
-                                
-                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                                
-                            }
-                            else{
-                                break;
-                            }
-                            
-                        }
-                        else{
-                            break;
-                        }
-                    
-                    }
-                    else{
-                        
-                        if (checkTile === targetTile){
-                            
-                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                            
-                        }
-                        
-                    }
-                }
-                
-            }
-            else if (dx < 0 && dy > 0){
-                //Up and Left
-                
-                for (var i = 1; i < 8; i++){
-                    //println("i"+i);
-                    var checkTile = (((rows[currentTile.tileRight-i])[currentTile.tileUp+i]));
-                    
-                    if (checkTile.piece !== null){
-                        
-                        if ((checkTile.piece).team !== turn){
-                                
-                            if (checkTile === targetTile){
-                                
-                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                                
-                            }
-                            else{
-                                break;
-                            }
-                            
-                        }
-                        else{
-                            break;
-                        }
-                    
-                    }
-                    else{
-                        
-                        if (checkTile === targetTile){
-                            
-                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                            
-                        }
-                        
-                    }
-                }
-            }
-            else if (dx < 0 && dy < 0){
-                //Down and Left
-                
-                for (var i = 1; i < 8; i++){
-                    //println("i"+i);
-                    var checkTile = (((rows[currentTile.tileRight-i])[currentTile.tileUp-i]));
-                    
-                    if (checkTile.piece !== null){
-                        
-                        if ((checkTile.piece).team !== turn){
-                                
-                            if (checkTile === targetTile){
-                                
-                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                                
-                            }
-                            else{
-                                break;
-                            }
-                            
-                        }
-                        else{
-                            break;
-                        }
-                    
-                    }
-                    else{
-                        
-                        if (checkTile === targetTile){
-                            
-                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                            
-                        }
-                        
-                    }
-                }
-            }
-            
-            
-        }
-        
-    }
-    
-    
-    else if(type === "rook"){
-        var currentTile = currentPiece.getTile();
-        
-        var dx = (targetTile.tileRight - currentTile.tileRight);
-        var dy = (targetTile.tileUp - currentTile.tileUp);
-            
-            
-            if (dx === 0 || dy === 0){
-                
-                if (dy !== 0){
-                for (var i = 1; i < 8; i++){
-                    
-                    var multiplier = 1;
-                    if (dy < 0){
-                        multiplier = -1;
-                    }
-                    var checkTile = (((rows[currentTile.tileRight])[currentTile.tileUp+(i*multiplier)]));
-                    
-                    if (checkTile.piece !== null){
-                        
-                        if ((checkTile.piece).team !== turn){
-                                
-                            if (checkTile === targetTile){
-                                
-                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                                
-                            }
-                            else{
-                                break;
-                            }
-                            
-                        }
-                        else{
-                            break;
-                        }
-                    
-                    }
-                    else{
-                        
-                        if (checkTile === targetTile){
-                            
-                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                            
-                        }
-                        
-                    }
-                }
-                
-                }
-                
-                if (dx !== 0){
-                for (var i = 1; i < 8; i++){
-                    
-                    var multiplier = 1;
-                    if (dx < 0){
-                        multiplier = -1;
-                    }
-                    var checkTile = (((rows[currentTile.tileRight+(i*multiplier)])[currentTile.tileUp]));
-                    
-                    if (checkTile.piece !== null){
-                        
-                        if ((checkTile.piece).team !== turn){
-                                
-                            if (checkTile === targetTile){
-                                
-                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                                
-                            }
-                            else{
-                                break;
-                            }
-                            
-                        }
-                        else{
-                            break;
-                        }
-                    
-                    }
-                    else{
-                        
-                        if (checkTile === targetTile){
-                            
-                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                            
-                        }
-                        
-                    }
-                }
-                
-                }
-                
-            }
-    }
-    
-};
+//Queens
+((rows[3])[0]).piece = (new Piece("queen", 3,0, "white"));
+((rows[3])[7]).piece = (new Piece("queen", 3,7, "black"));
 
+//Knights
+((rows[1])[0]).piece = (new Piece("knight", 1,0, "white"));
+((rows[6])[0]).piece = (new Piece("knight", 6,0, "white"));
+((rows[1])[7]).piece = (new Piece("knight", 1,7, "black"));
+((rows[6])[7]).piece = (new Piece("knight", 6,7, "black"));
+
+//Kings
+((rows[4])[0]).piece = (new Piece("king", 4,0, "white"));
+((rows[4])[7]).piece = (new Piece("king", 4,7, "black"));
+
+//Find piece that is currently selected
 var getSelectedPiece = function() {
     for (var i = 0; i < rows.length; i++) {
         for (var j = 0; j < rows[i].length; j++) {
@@ -542,7 +930,6 @@ Piece.prototype.onClick = function(){
 };
 
 Tile.prototype.onClick = function(){
-    
     //Check if a piece is selected already
     for (var i = 0; i < rows.length; i++){
         for (var j = 0; j < (rows[i]).length; j++){
@@ -551,7 +938,6 @@ Tile.prototype.onClick = function(){
             if (currentPiece !== null){
                 
                 if (currentPiece.selected === true){
-                    //println(i+","+j);
                     checkValidMove(currentPiece, this);
                 }
             }
@@ -561,7 +947,7 @@ Tile.prototype.onClick = function(){
 };
 
 Piece.prototype.isMouseInside = function() {
-    //println(this.pawnX +","+this.pawnY);
+    
     
     var tile = this.getTile();
     
@@ -572,9 +958,6 @@ Piece.prototype.isMouseInside = function() {
 };
 
 Tile.prototype.isMouseInside = function() {
-    //println("mouse: "+mouseX+","+mouseY);
-    //println("tile: " +this.tileLeft+","+ this.tileRight);
-    //println("tile cont.: "+this.tileTop+","+this.tileBottom);
     return mouseX > this.tileLeftBound &&
            mouseX < (this.tileRightBound) &&
            mouseY > this.tileTopBound &&
@@ -598,8 +981,7 @@ Tile.prototype.handleMouseClick = function() {
 };
 
 mouseClicked = function() {
-    //println("mouse: "+ mouseX+","+mouseY);
-    //println("pawn: "+(pawnList[0]).pawnX+","+(pawnList[0].pawnY));
+    
     for (var i = 0; i < rows.length; i++){
         for (var j = 0; j < (rows[i]).length; j++){
             var currentPiece = (((rows[i])[j]).piece);
@@ -614,27 +996,17 @@ mouseClicked = function() {
                 ((rows[i])[j]).handleMouseClick();
                 
             }
-            
         }
     }
-    //if (btn1.isMouseInside()){
-        //btn1.handleMouseClick();
-    //}
 };
-
-//var theRow = 5;
-//var theColumn = 1;
 
 draw = function() {
     
     boardInit();
     fill(255, 255, 255);
     
-    //ellipse((rows[theRow])[theColumn].tileX+(47.625/2), (rows[theRow])[theColumn].tileY+(47.625/2), 20, 20);
-    
     for (var i = 0; i < rows.length; i++){
         for (var j = 0; j < (rows[i]).length; j++){
-            
             if ((((rows[i])[j]).piece) !== null){
                 (((rows[i])[j]).piece).draw();
             }
@@ -642,653 +1014,19 @@ draw = function() {
         }
     }
     
-    
-    
-};
-
-//Second
-var pieceSelected = false;
-
-var turn = "white";
-
-var Tile = function(tileX, tileY, tileRight, tileUp){
-    
-    this.tileX = tileX;
-    this.tileY = tileY;
-    this.tileLeftBound = tileX;
-    this.tileRightBound = tileX+47.625;
-    this.tileTopBound = tileY;
-    this.tileBottomBound = tileY+ 47.625;
-    this.tileRight = tileRight;
-    this.tileUp = tileUp;
-    this.piece = null;
-    
-};
-
-var Piece = function(type, tileRight, tileUp, team){
-    
-    this.type = type;
-    this.team = team;
-    this.tileRight = tileRight;
-    this.tileUp = tileUp;
-    this.selected = false;
-    
-};
-
-var rows = [];
-
-Piece.prototype.draw = function(){
-    
-    if (this.team === "white"){
-        
-        stroke(255, 255, 255);
-        strokeWeight(1);
-        fill(255, 255, 255);
+    if (isInCheck() && !checkingCheckmate){
+        if(isCheckmate()){
+            gameEnd = true;
+        }
     }
-    else {
-        stroke(0, 0, 0);
-        strokeWeight(1);
+    
+    if (gameEnd){
         fill(0, 0, 0);
-    }
-    
-    textSize(12);
-    
-    var tileRight = this.tileRight;
-    var tileUp = this.tileUp;
-    
-    // Check if tile indices are valid
-    
-    
-    if (tileRight !== null && tileUp !== null && rows[tileRight] && (rows[tileRight])[tileUp]) {
-        
-        var tile = this.getTile();
-        
-        text(this.type, tile.tileX+8.5, tile.tileY+27);
-        
-        if (this.selected) {
-        fill(255, 0, 0, 35); // Red with 100 alpha (semi-transparent)
-        rect(tile.tileX, tile.tileY, 47.625, 47.625);
-    }
-        
-    }
-    
-    //rect(this.pawnX, this.pawnY, 47.625, 47.625);
-    
-};
-
-Piece.prototype.getTile = function(){
-    
-    var tile = (rows[this.tileRight])[this.tileUp];
-    return tile;
-    
-};
-
-Piece.prototype.move = function(newInd, newInd2){
-    
-    //println("moving");
-    
-    var newTile = ((rows[newInd])[newInd2]);
-    
-    var oldTile = this.getTile();
-    
-    var tempPiece = oldTile.piece;
-    
-    tempPiece.selected = false;
-    
-    tempPiece.tileRight = newInd;
-    
-    tempPiece.tileUp = newInd2;
-    
-    oldTile.piece = null;
-    
-    newTile.piece = tempPiece;
-    
-    newTile.tileRight = newInd;
-    newTile.tileUp = newInd2;
-    
-    if (turn === "white"){
-        turn = "black";
-    }
-    else{
-        turn = "white";
-    }
-    
-    //println("turn: "+turn);
-    
-    
-};
-
-var boardInit = function(){
-    
-    background(110, 38, 14);
-    noFill();
-    strokeWeight(2);
-    stroke(234, 221, 202);
-    rect(8, 8, 384, 384);
-    
-    strokeWeight(1);
-    
-    stroke(0, 0, 0);
-    
-    line(9, 9, 390, 9);
-    for (var i = 0; i < 8; i++){
-        
-        for (var j = 0; j < 8; j++){
-            
-            if ((j%2)=== 0  && i%2 === 0){
-                fill(234,221,202);
-            }
-            else if (i%2 !== 0 && j%2 !==0){
-                fill(234, 221, 202);
-            } 
-            else {
-                fill(110, 28, 13);
-            }
-            rect((47.625*j)+9,(47.625*i)+9, 47.625, 47.625);
-            
-        }
-    }
-    
-};
-
-var letters = ["a", "b", "c", "d", "e", "f", "g", "h"];
-
-for (var i = 0; i < 8; i++){
-    
-    var row = [];
-    
-    for (var j = 0; j < 8; j++){
-        
-        row.push(new Tile((47.625*i)+9, (47.625*j)+9, i, 7-j));
-        
-    }
-    
-    row = row.reverse();
-    rows.push(row);
-
-}
-
-var theRow = 5;
-var theColumn = 4;
-
-//Create Pawns
-for (var i = 0; i < 16; i++){
-    
-    if (i < 8){
-        
-        ((rows[i])[1]).piece = (new Piece("pawn", i, 1, "white"));
-        (((rows[i])[1]).piece).firstTurn = true;
-    }
-    else{
-        ((rows[i-8])[6]).piece = (new Piece("pawn", i-8, 6, "black"));
-        (((rows[i-8])[6]).piece).firstTurn = true;
-    }
-    
-}
-
-//Create other pieces
-((rows[2])[0]).piece = (new Piece("bishop", 2,0, "white"));
-((rows[5])[0]).piece = (new Piece("bishop", 5,0, "white"));
-((rows[2])[7]).piece = (new Piece("bishop", 2,7, "black"));
-((rows[5])[7]).piece = (new Piece("bishop", 5,7, "black"));
-
-((rows[0])[0]).piece = (new Piece("rook", 0,0, "white"));
-((rows[7])[0]).piece = (new Piece("rook", 7,0, "white"));
-((rows[0])[7]).piece = (new Piece("rook", 0,7, "black"));
-((rows[7])[7]).piece = (new Piece("rook", 7,7, "black"));
-
-var checkValidMove = function(currentPiece, targetTile){
-    
-    var type = currentPiece.type;
-    var team = currentPiece.team;
-    var backwards = 1;
-    
-    if (type === "pawn"){
-        
-        if (team === "black"){
-        backwards = -1;
-        }
-        
-        var pieceInd = currentPiece.tileRight;
-        var pieceInd2 = currentPiece.tileUp;
-        
-        //println("("+pieceInd+","+pieceInd2+")");
-        
-        
-        for (var i = 0; i < rows.length; i++){
-        for (var j = 0; j < (rows[i]).length; j++){
-            
-            var checkTile = (((rows[i])[j]));
-            
-            if (checkTile === targetTile){
-                
-                if (checkTile.piece === null){
-                if (i === pieceInd && (j === pieceInd2 + (backwards*1) || (currentPiece.firstTurn === true && j === pieceInd2 +(2*backwards)))){
-                    
-                    if (currentPiece.firstTurn === true){
-                        currentPiece.firstTurn = false;
-                    }
-                    
-                    //println("("+i+","+j+")");
-                    currentPiece.move(i, j);
-                    
-                }
-            }
-                else if(checkTile.piece !== null){
-                    //println("checking for capture");
-                    
-                    if((i === pieceInd+1 || i === pieceInd-1)&&(j === pieceInd2 +(backwards*1))){
-                        
-                        currentPiece.move(i, j);
-                        
-                    }
-                    
-                }
-            }
-        }    
-        }    
-    }
-    
-    else if(type === "bishop"){
-        
-        var currentTile = currentPiece.getTile();
-        
-        var dx = (targetTile.tileRight - currentTile.tileRight);
-        var dy = (targetTile.tileUp - currentTile.tileUp);
-        
-        if (abs(dx) === abs(dy)){
-            
-            if (dx > 0 && dy > 0){
-                //Up and Right
-                for (var i = 1; i < 8; i++){
-                    //println("i"+i);
-                    var checkTile = (((rows[currentTile.tileRight+i])[currentTile.tileUp+i]));
-                    
-                    if (checkTile.piece !== null){
-                        
-                        if ((checkTile.piece).team !== turn){
-                                
-                            if (checkTile === targetTile){
-                                
-                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                                
-                            }
-                            else{
-                                break;
-                            }
-                            
-                        }
-                        else{
-                            break;
-                        }
-                    
-                    }
-                    else{
-                        
-                        if (checkTile === targetTile){
-                            
-                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                            
-                        }
-                        
-                    }
-                }
-            }
-            
-            else if (dx > 0 && dy < 0){
-                //Down and Right
-                
-                for (var i = 1; i < 8; i++){
-                    //println("i"+i);
-                    var checkTile = (((rows[currentTile.tileRight+i])[currentTile.tileUp-i]));
-                    
-                    if (checkTile.piece !== null){
-                        
-                        if ((checkTile.piece).team !== turn){
-                                
-                            if (checkTile === targetTile){
-                                
-                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                                
-                            }
-                            else{
-                                break;
-                            }
-                            
-                        }
-                        else{
-                            break;
-                        }
-                    
-                    }
-                    else{
-                        
-                        if (checkTile === targetTile){
-                            
-                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                            
-                        }
-                        
-                    }
-                }
-                
-            }
-            else if (dx < 0 && dy > 0){
-                //Up and Left
-                
-                for (var i = 1; i < 8; i++){
-                    //println("i"+i);
-                    var checkTile = (((rows[currentTile.tileRight-i])[currentTile.tileUp+i]));
-                    
-                    if (checkTile.piece !== null){
-                        
-                        if ((checkTile.piece).team !== turn){
-                                
-                            if (checkTile === targetTile){
-                                
-                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                                
-                            }
-                            else{
-                                break;
-                            }
-                            
-                        }
-                        else{
-                            break;
-                        }
-                    
-                    }
-                    else{
-                        
-                        if (checkTile === targetTile){
-                            
-                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                            
-                        }
-                        
-                    }
-                }
-            }
-            else if (dx < 0 && dy < 0){
-                //Down and Left
-                
-                for (var i = 1; i < 8; i++){
-                    //println("i"+i);
-                    var checkTile = (((rows[currentTile.tileRight-i])[currentTile.tileUp-i]));
-                    
-                    if (checkTile.piece !== null){
-                        
-                        if ((checkTile.piece).team !== turn){
-                                
-                            if (checkTile === targetTile){
-                                
-                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                                
-                            }
-                            else{
-                                break;
-                            }
-                            
-                        }
-                        else{
-                            break;
-                        }
-                    
-                    }
-                    else{
-                        
-                        if (checkTile === targetTile){
-                            
-                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                            
-                        }
-                        
-                    }
-                }
-            }
-            
-            
-        }
-        
-    }
-    
-    
-    else if(type === "rook"){
-        var currentTile = currentPiece.getTile();
-        
-        var dx = (targetTile.tileRight - currentTile.tileRight);
-        var dy = (targetTile.tileUp - currentTile.tileUp);
-            
-            
-            if (dx === 0 || dy === 0){
-                
-                if (dy !== 0){
-                for (var i = 1; i < 8; i++){
-                    
-                    var multiplier = 1;
-                    if (dy < 0){
-                        multiplier = -1;
-                    }
-                    var checkTile = (((rows[currentTile.tileRight])[currentTile.tileUp+(i*multiplier)]));
-                    
-                    if (checkTile.piece !== null){
-                        
-                        if ((checkTile.piece).team !== turn){
-                                
-                            if (checkTile === targetTile){
-                                
-                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                                
-                            }
-                            else{
-                                break;
-                            }
-                            
-                        }
-                        else{
-                            break;
-                        }
-                    
-                    }
-                    else{
-                        
-                        if (checkTile === targetTile){
-                            
-                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                            
-                        }
-                        
-                    }
-                }
-                
-                }
-                
-                if (dx !== 0){
-                for (var i = 1; i < 8; i++){
-                    
-                    var multiplier = 1;
-                    if (dx < 0){
-                        multiplier = -1;
-                    }
-                    var checkTile = (((rows[currentTile.tileRight+(i*multiplier)])[currentTile.tileUp]));
-                    
-                    if (checkTile.piece !== null){
-                        
-                        if ((checkTile.piece).team !== turn){
-                                
-                            if (checkTile === targetTile){
-                                
-                                currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                                
-                            }
-                            else{
-                                break;
-                            }
-                            
-                        }
-                        else{
-                            break;
-                        }
-                    
-                    }
-                    else{
-                        
-                        if (checkTile === targetTile){
-                            
-                            currentPiece.move(checkTile.tileRight, checkTile.tileUp);
-                            
-                        }
-                        
-                    }
-                }
-                
-                }
-                
-            }
-    }
-    
-};
-
-var getSelectedPiece = function() {
-    for (var i = 0; i < rows.length; i++) {
-        for (var j = 0; j < rows[i].length; j++) {
-            var currentPiece = rows[i][j].piece;
-            if (currentPiece && currentPiece.selected) {
-                return currentPiece;
-            }
-        }
-    }
-    return null;
-};
-
-Piece.prototype.onClick = function(){
-    
-    var tile = this.getTile();
-    
-    if (turn === this.team){
-    for (var i = 0; i < rows.length; i++) {
-        for (var j = 0; j < rows[i].length; j++) {
-            if (rows[i][j].piece !== null) {
-                rows[i][j].piece.selected = false;
-            }
-        }
-    }
-
-    // Select the current piece
-    
-    this.selected = !this.selected;
-    }
-    else if(turn !== this.team){
-        var selectedPiece = getSelectedPiece();
-        
-        if (selectedPiece) {
-            checkValidMove(selectedPiece, tile);
-        }
+        rect(104, 171, 4*47.625, 58);
+        fill(255, 255, 255);
+        textSize(25);
+        text("Checkmate!", 131, 208);
     }
 };
 
-Tile.prototype.onClick = function(){
-    
-    //Check if a piece is selected already
-    for (var i = 0; i < rows.length; i++){
-        for (var j = 0; j < (rows[i]).length; j++){
-            var currentPiece = (((rows[i])[j]).piece);
-            
-            if (currentPiece !== null){
-                
-                if (currentPiece.selected === true){
-                    //println(i+","+j);
-                    checkValidMove(currentPiece, this);
-                }
-            }
-        }
-    }
-    
-};
 
-Piece.prototype.isMouseInside = function() {
-    //println(this.pawnX +","+this.pawnY);
-    
-    var tile = this.getTile();
-    
-    return mouseX > tile.tileLeftBound &&
-           mouseX < (tile.tileRightBound) &&
-           mouseY > tile.tileTopBound &&
-           mouseY < (tile.tileBottomBound);
-};
-
-Tile.prototype.isMouseInside = function() {
-    //println("mouse: "+mouseX+","+mouseY);
-    //println("tile: " +this.tileLeft+","+ this.tileRight);
-    //println("tile cont.: "+this.tileTop+","+this.tileBottom);
-    return mouseX > this.tileLeftBound &&
-           mouseX < (this.tileRightBound) &&
-           mouseY > this.tileTopBound &&
-           mouseY < (this.tileBottomBound);
-    
-};
-
-Piece.prototype.handleMouseClick = function() {
-    if (this.isMouseInside()) {
-        
-        this.onClick();
-    }
-};
-
-Tile.prototype.handleMouseClick = function() {
-
-    if (this.isMouseInside()) {
-        this.onClick();
-    }
-    
-};
-
-mouseClicked = function() {
-    //println("mouse: "+ mouseX+","+mouseY);
-    //println("pawn: "+(pawnList[0]).pawnX+","+(pawnList[0].pawnY));
-    for (var i = 0; i < rows.length; i++){
-        for (var j = 0; j < (rows[i]).length; j++){
-            var currentPiece = (((rows[i])[j]).piece);
-            
-            if (currentPiece !== null){
-                
-                currentPiece.handleMouseClick();
-                
-            }
-            else {
-                
-                ((rows[i])[j]).handleMouseClick();
-                
-            }
-            
-        }
-    }
-    //if (btn1.isMouseInside()){
-        //btn1.handleMouseClick();
-    //}
-};
-
-//var theRow = 5;
-//var theColumn = 1;
-
-draw = function() {
-    
-    boardInit();
-    fill(255, 255, 255);
-    
-    //ellipse((rows[theRow])[theColumn].tileX+(47.625/2), (rows[theRow])[theColumn].tileY+(47.625/2), 20, 20);
-    
-    for (var i = 0; i < rows.length; i++){
-        for (var j = 0; j < (rows[i]).length; j++){
-            
-            if ((((rows[i])[j]).piece) !== null){
-                (((rows[i])[j]).piece).draw();
-            }
-            
-        }
-    }
-    
-    
-    
-};
