@@ -1,17 +1,421 @@
+var currentScene = 0;  //0 = splash sceen; 1= game screen; 3 = end screen
+var score = 0;
 
-//Turn variable
+var bitmojiX = 100;
+var bitmojiY = 100;
+
+//Function to create bitmoji on the screen
+var drawSeanBitmoji = function (bitmojiObject){
+    
+    //Set bitmoji height to a fraction of the objects h value(Had to be modified for
+    //correct sizing)
+    var bitmojiHeight = (bitmojiObject.h)*(5/9);
+    
+    //Set bodyX and bodyY to object x with adjustment for displacement based on size
+    var bodyX = bitmojiObject.x-bitmojiHeight;
+    var bodyY = bitmojiObject.y-bitmojiHeight;
+    
+    //Set shirtColor to the object's shirtColor
+    var shirtColor = bitmojiObject.shirtColor;
+    
+    //Set initialValue to the object's initials value(The variable could not be "initials" 
+    //because the function to draw the initials shares that name
+    var initialValue = bitmojiObject.initials;
+    
+    // Neck
+    function neck(bodyX, bodyY, bitmojiHeight) {
+        fill(255, 224, 189);
+        rect(74 * (bitmojiHeight / 100) + bodyX, 139 * (bitmojiHeight / 100) + bodyY, 50 * (bitmojiHeight / 100), 30 * (bitmojiHeight / 100));
+    }
+
+    // Head
+    function head(bodyX, bodyY, bitmojiHeight) {
+        fill(255, 224, 189);
+        ellipse(100 * (bitmojiHeight / 100) + bodyX, 100 * (bitmojiHeight / 100) + bodyY, 80 * (bitmojiHeight / 100), 100 * (bitmojiHeight / 100));
+    }
+
+    // Hair
+    function hair(bodyX, bodyY, bitmojiHeight) {
+        noStroke();
+        fill(245, 212, 103);
+        ellipse(100 * (bitmojiHeight / 100) + bodyX, 61 * (bitmojiHeight / 100) + bodyY, 70 * (bitmojiHeight / 100), 34 * (bitmojiHeight / 100));
+        quad(
+            64 * (bitmojiHeight / 100) + bodyX,
+            56 * (bitmojiHeight / 100) + bodyY,
+            80 * (bitmojiHeight / 100) + bodyX,
+            46 * (bitmojiHeight / 100) + bodyY,
+            92 * (bitmojiHeight / 100) + bodyX,
+            77 * (bitmojiHeight / 100) + bodyY,
+            59 * (bitmojiHeight / 100) + bodyX,
+            92 * (bitmojiHeight / 100) + bodyY
+        );
+        quad(
+            134 * (bitmojiHeight / 100) + bodyX,
+            56 * (bitmojiHeight / 100) + bodyY,
+            89 * (bitmojiHeight / 100) + bodyX,
+            63 * (bitmojiHeight / 100) + bodyY,
+            106 * (bitmojiHeight / 100) + bodyX,
+            85 * (bitmojiHeight / 100) + bodyY,
+            143 * (bitmojiHeight / 100) + bodyX,
+            90 * (bitmojiHeight / 100) + bodyY
+        );
+    }
+
+    // Eyes
+    function eyes(bodyX, bodyY, bitmojiHeight) {
+        stroke(0, 0, 0);
+        fill(255, 255, 255);
+        ellipse(82 * (bitmojiHeight / 100) + bodyX, 100 * (bitmojiHeight / 100) + bodyY, 18 * (bitmojiHeight / 100), 13 * (bitmojiHeight / 100));
+        ellipse(118 * (bitmojiHeight / 100) + bodyX, 100 * (bitmojiHeight / 100) + bodyY, 18 * (bitmojiHeight / 100), 13 * (bitmojiHeight / 100));
+        noStroke();
+        fill(64, 139, 166);
+        ellipse(82 * (bitmojiHeight / 100) + bodyX, 100 * (bitmojiHeight / 100) + bodyY, 9 * (bitmojiHeight / 100), 9 * (bitmojiHeight / 100));
+        ellipse(118 * (bitmojiHeight / 100) + bodyX, 100 * (bitmojiHeight / 100) + bodyY, 9 * (bitmojiHeight / 100), 9 * (bitmojiHeight / 100));
+        fill(0, 0, 0);
+        ellipse(82 * (bitmojiHeight / 100) + bodyX, 100 * (bitmojiHeight / 100) + bodyY, 4 * (bitmojiHeight / 100), 4 * (bitmojiHeight / 100));
+        ellipse(118 * (bitmojiHeight / 100) + bodyX, 100 * (bitmojiHeight / 100) + bodyY, 4 * (bitmojiHeight / 100), 4 * (bitmojiHeight / 100));
+    }
+
+    // Nose
+    function nose(bodyX, bodyY, bitmojiHeight) {
+        stroke(0, 0, 0);
+        fill(255, 224, 189);
+        bezier(
+            98 * (bitmojiHeight / 100) + bodyX,
+            119 * (bitmojiHeight / 100) + bodyY,
+            110 * (bitmojiHeight / 100) + bodyX,
+            123 * (bitmojiHeight / 100) + bodyY,
+            109 * (bitmojiHeight / 100) + bodyX,
+            103 * (bitmojiHeight / 100) + bodyY,
+            98 * (bitmojiHeight / 100) + bodyX,
+            97 * (bitmojiHeight / 100) + bodyY
+        );
+    }
+
+    // Mouth
+    function mouth(bodyX, bodyY, bitmojiHeight) {
+        fill(237, 168, 168);
+        ellipse(101 * (bitmojiHeight / 100) + bodyX, 131 * (bitmojiHeight / 100) + bodyY, 21 * (bitmojiHeight / 100), 8 * (bitmojiHeight / 100));
+        line(
+            91 * (bitmojiHeight / 100) + bodyX,
+            131 * (bitmojiHeight / 100) + bodyY,
+            109 * (bitmojiHeight / 100) + bodyX,
+            131 * (bitmojiHeight / 100) + bodyY
+        );
+    }
+
+    // EyeBlack
+    function eyeBlack(bodyX, bodyY, bitmojiHeight) {
+        fill(36, 36, 36);
+        rect(
+            73 * (bitmojiHeight / 100) + bodyX,
+            108 * (bitmojiHeight / 100) + bodyY,
+            18 * (bitmojiHeight / 100),
+            5 * (bitmojiHeight / 100),
+            30
+        );
+        rect(
+            110 * (bitmojiHeight / 100) + bodyX,
+            108 * (bitmojiHeight / 100) + bodyY,
+            18 * (bitmojiHeight / 100),
+            5 * (bitmojiHeight / 100),
+            30
+        );
+    }
+
+    // Shirt
+    function shirt(bodyX, bodyY, bitmojiHeight) {
+        //Use the object's shirtColor
+        fill(shirtColor);
+        arc(
+            100 * (bitmojiHeight / 100) + bodyX,
+            193 * (bitmojiHeight / 100) + bodyY,
+            116 * (bitmojiHeight / 100),
+            69 * (bitmojiHeight / 100),
+            -180,
+            0
+        );
+        noStroke();
+        rect(41 * (bitmojiHeight / 100) + bodyX, 192 * (bitmojiHeight / 100) + bodyY, 118 * (bitmojiHeight / 100), 37 * (bitmojiHeight / 100));
+        fill(255, 224, 189);
+        triangle(
+            74 * (bitmojiHeight / 100) + bodyX,
+            156 * (bitmojiHeight / 100) + bodyY,
+            124 * (bitmojiHeight / 100) + bodyX,
+            156 * (bitmojiHeight / 100) + bodyY,
+            101 * (bitmojiHeight / 100) + bodyX,
+            178 * (bitmojiHeight / 100) + bodyY
+        );
+        stroke(0, 0, 0);
+        line(41 * (bitmojiHeight / 100) + bodyX, 192 * (bitmojiHeight / 100) + bodyY, 41 * (bitmojiHeight / 100) + bodyX, 227 * (bitmojiHeight / 100) + bodyY);
+        line(
+            158 * (bitmojiHeight / 100) + bodyX,
+            192 * (bitmojiHeight / 100) + bodyY,
+            158 * (bitmojiHeight / 100) + bodyX,
+            227 * (bitmojiHeight / 100) + bodyY
+        );
+    }
+
+    // ShirtCollar
+    function shirtCollar(bodyX, bodyY, bitmojiHeight) {
+        //Use the object's shirt color again
+        fill(shirtColor);
+        quad(
+            65 * (bitmojiHeight / 100) + bodyX,
+            160 * (bitmojiHeight / 100) + bodyY,
+            77 * (bitmojiHeight / 100) + bodyX,
+            159 * (bitmojiHeight / 100) + bodyY,
+            105 * (bitmojiHeight / 100) + bodyX,
+            186 * (bitmojiHeight / 100) + bodyY,
+            71 * (bitmojiHeight / 100) + bodyX,
+            177 * (bitmojiHeight / 100) + bodyY
+        );
+        quad(
+            133 * (bitmojiHeight / 100) + bodyX,
+            160 * (bitmojiHeight / 100) + bodyY,
+            121 * (bitmojiHeight / 100) + bodyX,
+            159 * (bitmojiHeight / 100) + bodyY,
+            98 * (bitmojiHeight / 100) + bodyX,
+            185 * (bitmojiHeight / 100) + bodyY,
+            129 * (bitmojiHeight / 100) + bodyX,
+            175 * (bitmojiHeight / 100) + bodyY
+        );
+        rect(95 * (bitmojiHeight / 100) + bodyX, 184 * (bitmojiHeight / 100) + bodyY, 10 * (bitmojiHeight / 100), 18 * (bitmojiHeight / 100));
+        triangle(
+            112 * (bitmojiHeight / 100) + bodyX,
+            171 * (bitmojiHeight / 100) + bodyY,
+            101 * (bitmojiHeight / 100) + bodyX,
+            183 * (bitmojiHeight / 100) + bodyY,
+            117 * (bitmojiHeight / 100) + bodyX,
+            183 * (bitmojiHeight / 100) + bodyY
+        );
+        triangle(
+            88 * (bitmojiHeight / 100) + bodyX,
+            171 * (bitmojiHeight / 100) + bodyY,
+            84 * (bitmojiHeight / 100) + bodyX,
+            183 * (bitmojiHeight / 100) + bodyY,
+            102 * (bitmojiHeight / 100) + bodyX,
+            183 * (bitmojiHeight / 100) + bodyY
+        );
+        fill(176, 212, 207);
+        ellipse(100.5 * (bitmojiHeight / 100) + bodyX, 191 * (bitmojiHeight / 100) + bodyY, 4 * (bitmojiHeight / 100), 4 * (bitmojiHeight / 100));
+        ellipse(100.5 * (bitmojiHeight / 100) + bodyX, 197 * (bitmojiHeight / 100) + bodyY, 4 * (bitmojiHeight / 100), 4 * (bitmojiHeight / 100));
+    }
+
+    // Initials
+    function initials(bodyX, bodyY, bitmojiHeight) {
+        fill(255, 255, 255);
+        textSize(20 * (bitmojiHeight / 100));
+        text("SH", 55 * (bitmojiHeight / 100) + bodyX, 188 * (bitmojiHeight / 100) + bodyY, 300, 300);
+    }
+
+    // Emblem
+    function emblem(bodyX, bodyY, bitmojiHeight) {
+        line(
+            125 * (bitmojiHeight / 100) + bodyX,
+            188 * (bitmojiHeight / 100) + bodyY,
+            132 * (bitmojiHeight / 100) + bodyX,
+            207 * (bitmojiHeight / 100) + bodyY
+        );
+        fill(224, 38, 38);
+        triangle(
+            125 * (bitmojiHeight / 100) + bodyX,
+            188 * (bitmojiHeight / 100) + bodyY,
+            130 * (bitmojiHeight / 100) + bodyX,
+            200 * (bitmojiHeight / 100) + bodyY,
+            145 * (bitmojiHeight / 100) + bodyX,
+            190 * (bitmojiHeight / 100) + bodyY
+        );
+        noFill();
+        stroke(255, 255, 255);
+        ellipse(
+            131 * (bitmojiHeight / 100) + bodyX,
+            193 * (bitmojiHeight / 100) + bodyY,
+            3 * (bitmojiHeight / 100),
+            3 * (bitmojiHeight / 100)
+        );
+        line(
+            133 * (bitmojiHeight / 100) + bodyX,
+            193 * (bitmojiHeight / 100) + bodyY,
+            139 * (bitmojiHeight / 100) + bodyX,
+            190.5 * (bitmojiHeight / 100) + bodyY
+        );
+        fill(0, 0, 0);
+        textSize(5 * (bitmojiHeight / 100));
+        text("Keyport", 139 * (bitmojiHeight / 100) + bodyX, 199 * (bitmojiHeight / 100) + bodyY);
+        text("Yacht", 132 * (bitmojiHeight / 100) + bodyX, 204 * (bitmojiHeight / 100) + bodyY);
+        text("Club", 147 * (bitmojiHeight / 100) + bodyX, 204 * (bitmojiHeight / 100) + bodyY);
+        textSize(6.5 * (bitmojiHeight / 100));
+        text("Junior", 115 * (bitmojiHeight / 100) + bodyX, 212 * (bitmojiHeight / 100) + bodyY);
+        text("Sailing", 135 * (bitmojiHeight / 100) + bodyX, 212 * (bitmojiHeight / 100) + bodyY);
+        text("Instructor", 121 * (bitmojiHeight / 100) + bodyX, 219 * (bitmojiHeight / 100) + bodyY);
+    }
+
+    // Sunglasses
+    function sunglasses(bodyX, bodyY, bitmojiHeight) {
+        stroke(0, 0, 0);
+        fill(37, 51, 16, 127);
+        ellipse(104 * (bitmojiHeight / 100) + bodyX, 189 * (bitmojiHeight / 100) + bodyY, 15 * (bitmojiHeight / 100), 17 * (bitmojiHeight / 100));
+        ellipse(104 * (bitmojiHeight / 100) + bodyX, 210 * (bitmojiHeight / 100) + bodyY, 15 * (bitmojiHeight / 100), 17 * (bitmojiHeight / 100));
+        fill(0, 0, 0);
+        line(
+            111 * (bitmojiHeight / 100) + bodyX,
+            211 * (bitmojiHeight / 100) + bodyY,
+            111 * (bitmojiHeight / 100) + bodyX,
+            188 * (bitmojiHeight / 100) + bodyY
+        );
+        line(
+            108 * (bitmojiHeight / 100) + bodyX,
+            202 * (bitmojiHeight / 100) + bodyY,
+            108 * (bitmojiHeight / 100) + bodyX,
+            195 * (bitmojiHeight / 100) + bodyY
+        );
+    }
+
+    neck(bodyX, bodyY, bitmojiHeight);
+    head(bodyX, bodyY, bitmojiHeight);
+    hair(bodyX, bodyY, bitmojiHeight);
+    eyes(bodyX, bodyY, bitmojiHeight);
+    nose(bodyX, bodyY, bitmojiHeight);
+    mouth(bodyX, bodyY, bitmojiHeight);
+    eyeBlack(bodyX, bodyY, bitmojiHeight);
+    shirt(bodyX, bodyY, bitmojiHeight);
+    shirtCollar(bodyX, bodyY, bitmojiHeight);
+    
+    //Check if initials are true or false before drawing them
+    if(initialValue === true){
+        initials(bodyX, bodyY, bitmojiHeight);
+    }
+    emblem(bodyX, bodyY, bitmojiHeight);
+    sunglasses(bodyX, bodyY, bitmojiHeight);
+};
+
+//Call drawBitmoji Function
+
+var drawHead = function (x, y, bitmojiHeight)
+
+{
+  var ratio = bitmojiHeight/100; 
+    noStroke();
+    fill(255, 224, 184); //skin color
+    ellipse(x,y,83*ratio,100*ratio); //head
+    fill(169, 125, 50); //hair color
+    quad(x-43*ratio,y-7*ratio,x-29*ratio,y-36*ratio,x-12*ratio,y-48*ratio,x-34*ratio,y     +3*ratio); //left hair
+    quad(x+43*ratio,y+1*ratio,x+34*ratio,y-32*ratio,x+13*ratio,y-50*ratio,x+35*ratio,y     -3*ratio); //right hair
+    fill(0, 0, 0); //hat color
+    ellipse(x+1*ratio,y-38*ratio,58*ratio,27*ratio); //hat
+    fill(99,57,15); //eye color
+    stroke(0, 0, 0);
+    ellipse(x-12*ratio,y,6*ratio,4*ratio); //left eye
+    ellipse(x+16*ratio,y,6*ratio,4*ratio); //right eye
+    fill(255, 224, 184); //nose color
+    bezier(x,y,x+21*ratio,y+22*ratio,x-8*ratio,y+20*ratio,x-4*ratio,y+15*ratio); //nose
+    fill(255, 255, 255); //white for smile
+    arc(x,y+25*ratio,29*ratio,13*ratio,1,180); //smile
+    line(x-16*ratio,y+24*ratio,x+14*ratio,y+24*ratio); //line for smile
+};
+
+var drawShirt = function(x, y, bitmojiHeight){
+var ratio = bitmojiHeight/100;   
+    
+    fill(0, 0, 0); //shirt color
+    rect(x-35*ratio,y+50*ratio,71*ratio,63*ratio); //shirt
+    rect(x-45*ratio,y+50*ratio,11*ratio,37*ratio); //left sholder sleeve
+    rect(x+35*ratio,y+50*ratio,11*ratio,37*ratio); //right sholder sleeve
+    fill(247, 247, 247); //text color
+    textSize(20*ratio);
+    text("CH",x-13*ratio,y+78*ratio);
+};
+
+var drawCamBitmoji = function(x, y, h){
+
+    drawHead (x, y, h);
+    drawShirt (x, y, h);
+    };
+
+var Button = function(config) {
+    this.x = config.x || 0;
+    this.y = config.y || 0;
+    this.width = config.width || 150;
+    this.height = config.height || 50;
+    this.label = config.label || "Click";
+    this.onClick = config.onClick || function() {};
+};
+
+Button.prototype.draw = function() {
+    fill(234, 221, 202);
+    rect(this.x, this.y, this.width, this.height, 5);
+    fill(0, 0, 0);
+    textSize(19);
+    //textAlign(LEFT, TOP);
+    text(this.label, this.x+44, this.y+this.height-20);
+};
+
+Button.prototype.isMouseInside = function() {
+    return mouseX > this.x &&
+           mouseX < (this.x + this.width) &&
+           mouseY > this.y &&
+           mouseY < (this.y + this.height);
+};
+
+Button.prototype.handleMouseClick = function() {
+    if (this.isMouseInside()) {
+        this.onClick();
+    }
+};
+
+
+var startButton = new Button({
+    x: 121,
+    y: 300,
+    label: "START",
+    onClick: function() {
+        currentScene = 1;
+        
+    }
+});
+
+var splashScreen = function ()
+{
+    background(110, 28, 13);
+    drawCamBitmoji(347,39,55);
+    drawSeanBitmoji({
+    x:48,
+    y:39,
+    h:89,
+    shirtColor:color(255, 255, 255),
+    initials:false});
+    fill(234, 221, 202);
+    textSize(25);
+    text ("By Cameron and Sean ", 71,184);
+    textSize(40);
+    text("Chess", 143,122);
+    textSize(20);
+    text("Click the start button to start the game",28,238);
+    startButton.draw();
+    startButton.draw();
+};
+
+var gameScreen = function ()
+{
+    
+    
+};
+
+var endScreen = function ()
+{
+    background(255, 0, 0);
+    
+};
+
 var turn = "white";
 
-//Flag variable to prevent infinite recursion
 var simulation = false;
 
-//Governs end of game
 var gameEnd = false;
 
-//Flag variable to prevent infinite recursion
 var checkingCheckmate = false;
 
-//Tile constructor
 var Tile = function(tileX, tileY, tileRight, tileUp){
     
     this.tileX = tileX;
@@ -26,7 +430,6 @@ var Tile = function(tileX, tileY, tileRight, tileUp){
     
 };
 
-//Piece Constructor
 var Piece = function(type, tileRight, tileUp, team){
     
     this.type = type;
@@ -37,10 +440,8 @@ var Piece = function(type, tileRight, tileUp, team){
     
 };
 
-//Declare tile rows
 var rows = [];
 
-//Draw pieces
 Piece.prototype.draw = function(){
     
     if (this.team === "white"){
@@ -121,7 +522,6 @@ Piece.prototype.draw = function(){
     
 };
 
-//Function to return the current tile of a piece
 Piece.prototype.getTile = function(){
     
     var tile = (rows[this.tileRight])[this.tileUp];
@@ -129,7 +529,6 @@ Piece.prototype.getTile = function(){
     
 };
 
-//Function to find the current team's king
 var findKing = function(){
     
     var kingPiece = null;
@@ -153,7 +552,6 @@ var findKing = function(){
     }
 };
 
-//Ruleset for pawns
 var pawnCheck = function(currentPiece, targetTile){
     
     var type = currentPiece.type;
@@ -187,7 +585,6 @@ var pawnCheck = function(currentPiece, targetTile){
     
 };
 
-//Ruleset for bishops
 var bishopCheck = function(currentPiece, targetTile){
     
     var type = currentPiece.type;
@@ -356,7 +753,6 @@ var bishopCheck = function(currentPiece, targetTile){
     
 };
 
-//Ruleset for rooks
 var rookCheck = function(currentPiece, targetTile){
     
     var type = currentPiece.type;
@@ -455,7 +851,6 @@ var rookCheck = function(currentPiece, targetTile){
     
 };
 
-//Ruleset for knights
 var knightCheck = function(currentPiece, targetTile){
     
     var type = currentPiece.type;
@@ -484,7 +879,6 @@ var knightCheck = function(currentPiece, targetTile){
     
 };
 
-//Ruleset for kings
 var kingCheck = function(currentPiece, targetTile){
     
     var type = currentPiece.type;
@@ -511,7 +905,6 @@ var kingCheck = function(currentPiece, targetTile){
     
 };
 
-//Function determining if an attempted move is legal
 var checkValidMove = function(currentPiece, targetTile){
     
     var type = currentPiece.type;
@@ -573,7 +966,6 @@ var checkValidMove = function(currentPiece, targetTile){
     
 };
 
-//Function to determine if the current team's king is in check
 var isInCheck = function(){
     
     var kingTile = findKing();
@@ -641,12 +1033,13 @@ var isInCheck = function(){
     
 };
 
-//Function to determine if the current king has lost
 var isCheckmate = function(){
     
     checkingCheckmate = true;
     var currentTurn = turn;
     var movesPossible = false;
+    
+    textAlign(BASELINE);
     
     for (var i = 0; i < rows.length; i++) {
         
@@ -719,7 +1112,6 @@ var isCheckmate = function(){
     
 };
 
-//Function to move pieces
 Piece.prototype.move = function(newInd, newInd2){
     
     var newTile = ((rows[newInd])[newInd2]);
@@ -760,7 +1152,6 @@ Piece.prototype.move = function(newInd, newInd2){
    
 };
 
-//Function to check if an attempted move will leave the king in check, making it illegal
 Piece.prototype.simulateMove = function(piece, targetTile) {
     // Store the original state
     simulation = true;
@@ -795,7 +1186,6 @@ Piece.prototype.simulateMove = function(piece, targetTile) {
     
 };
 
-//Function to draw the gameboard
 var boardInit = function(){
     
     background(110, 38, 14);
@@ -829,7 +1219,8 @@ var boardInit = function(){
     
 };
 
-//Create columns as array elements of rows array
+var letters = ["a", "b", "c", "d", "e", "f", "g", "h"];
+
 for (var i = 0; i < 8; i++){
     
     var row = [];
@@ -840,7 +1231,6 @@ for (var i = 0; i < 8; i++){
         
     }
     
-    //Reverse the column, such that lower values are on the bottom and higher values are on top
     row = row.reverse();
     rows.push(row);
 
@@ -850,12 +1240,11 @@ for (var i = 0; i < 8; i++){
 for (var i = 0; i < 16; i++){
     
     if (i < 8){
-        //Create white pawns
+        
         ((rows[i])[1]).piece = (new Piece("pawn", i, 1, "white"));
         (((rows[i])[1]).piece).firstTurn = true;
     }
     else{
-        //Create black pawns
         ((rows[i-8])[6]).piece = (new Piece("pawn", i-8, 6, "black"));
         (((rows[i-8])[6]).piece).firstTurn = true;
     }
@@ -863,8 +1252,8 @@ for (var i = 0; i < 16; i++){
 }
 
 //Create other pieces
-
 //Bishops
+
 ((rows[2])[0]).piece = (new Piece("bishop", 2,0, "white"));
 ((rows[5])[0]).piece = (new Piece("bishop", 5,0, "white"));
 ((rows[2])[7]).piece = (new Piece("bishop", 2,7, "black"));
@@ -890,7 +1279,6 @@ for (var i = 0; i < 16; i++){
 ((rows[4])[0]).piece = (new Piece("king", 4,0, "white"));
 ((rows[4])[7]).piece = (new Piece("king", 4,7, "black"));
 
-//Find piece that is currently selected
 var getSelectedPiece = function() {
     for (var i = 0; i < rows.length; i++) {
         for (var j = 0; j < rows[i].length; j++) {
@@ -982,6 +1370,12 @@ Tile.prototype.handleMouseClick = function() {
 
 mouseClicked = function() {
     
+    if (currentScene === 0){
+        
+        startButton.handleMouseClick();
+        
+    }
+    else if(currentScene === 1){
     for (var i = 0; i < rows.length; i++){
         for (var j = 0; j < (rows[i]).length; j++){
             var currentPiece = (((rows[i])[j]).piece);
@@ -998,11 +1392,15 @@ mouseClicked = function() {
             }
         }
     }
+    }
 };
 
 draw = function() {
-    
-    boardInit();
+     if (currentScene === 0) { splashScreen(); }
+     else if (currentScene === 2) {endScreen();}
+     else if (currentScene ===1) {
+         
+         boardInit();
     fill(255, 255, 255);
     
     for (var i = 0; i < rows.length; i++){
@@ -1027,6 +1425,7 @@ draw = function() {
         textSize(25);
         text("Checkmate!", 131, 208);
     }
+         
+     }
+     else {currentScene = 2;}
 };
-
-
