@@ -1,10 +1,9 @@
-var currentScene = 0;  //0 = splash sceen; 1= game screen; 3 = end screen
-var score = 0;
-
+//Global
+var currentScene = 0;  
 var bitmojiX = 100;
 var bitmojiY = 100;
 
-//Function to create bitmoji on the screen
+//Function to create Sean's bitmoji on the screen
 var drawSeanBitmoji = function (bitmojiObject){
     
     //Set bitmoji height to a fraction of the objects h value(Had to be modified for
@@ -290,7 +289,6 @@ var drawSeanBitmoji = function (bitmojiObject){
     sunglasses(bodyX, bodyY, bitmojiHeight);
 };
 
-//Call drawBitmoji Function
 
 var drawHead = function (x, y, bitmojiHeight)
 
@@ -327,12 +325,14 @@ var ratio = bitmojiHeight/100;
     text("CH",x-13*ratio,y+78*ratio);
 };
 
+//Function to draw Cam's bitmoji
 var drawCamBitmoji = function(x, y, h){
 
     drawHead (x, y, h);
     drawShirt (x, y, h);
     };
 
+//Button Constructor
 var Button = function(config) {
     this.x = config.x || 0;
     this.y = config.y || 0;
@@ -342,6 +342,7 @@ var Button = function(config) {
     this.onClick = config.onClick || function() {};
 };
 
+//Button draw function
 Button.prototype.draw = function() {
     fill(234, 221, 202);
     rect(this.x, this.y, this.width, this.height, 5);
@@ -351,6 +352,7 @@ Button.prototype.draw = function() {
     text(this.label, this.x+44, this.y+this.height-20);
 };
 
+//Button is mouse inside check
 Button.prototype.isMouseInside = function() {
     return mouseX > this.x &&
            mouseX < (this.x + this.width) &&
@@ -358,13 +360,14 @@ Button.prototype.isMouseInside = function() {
            mouseY < (this.y + this.height);
 };
 
+//Button mouse click handler
 Button.prototype.handleMouseClick = function() {
     if (this.isMouseInside()) {
         this.onClick();
     }
 };
 
-
+//Use previous button constructor to create START button
 var startButton = new Button({
     x: 121,
     y: 300,
@@ -375,6 +378,7 @@ var startButton = new Button({
     }
 });
 
+//Draw the splashscreen
 var splashScreen = function ()
 {
     background(110, 28, 13);
@@ -396,26 +400,26 @@ var splashScreen = function ()
     startButton.draw();
 };
 
-var gameScreen = function ()
-{
-    
-    
-};
-
+//Draw the end game screen
 var endScreen = function ()
 {
     background(255, 0, 0);
     
 };
 
+//Global turn variable, determines who is able to move
 var turn = "white";
 
+//Simulation flag, see simulateMove
 var simulation = false;
 
+//Flag for game end
 var gameEnd = false;
 
+//Flag to prevent recursion
 var checkingCheckmate = false;
 
+//Tile constructor
 var Tile = function(tileX, tileY, tileRight, tileUp){
     
     this.tileX = tileX;
@@ -430,6 +434,7 @@ var Tile = function(tileX, tileY, tileRight, tileUp){
     
 };
 
+//Piece constructor
 var Piece = function(type, tileRight, tileUp, team){
     
     this.type = type;
@@ -440,10 +445,13 @@ var Piece = function(type, tileRight, tileUp, team){
     
 };
 
+//Create array for rows
 var rows = [];
 
+//Draw piece
 Piece.prototype.draw = function(){
     
+    //Determine color
     if (this.team === "white"){
         
         stroke(255, 255, 255);
@@ -458,16 +466,17 @@ Piece.prototype.draw = function(){
     
     textSize(12);
     
+    //Simplify variables
     var tileRight = this.tileRight;
     var tileUp = this.tileUp;
     
     // Check if tile indices are valid
-    
-    
     if (tileRight !== null && tileUp !== null && rows[tileRight] && (rows[tileRight])[tileUp]) {
         
+        //Simplify tile variable
         var tile = this.getTile();
         
+        //Color in ellipse red to signify selection
         if (this.selected) {
         fill(255, 0, 0, 35); // Red with 100 alpha (semi-transparent)
         rect(tile.tileX, tile.tileY, 47.625, 47.625);
@@ -475,6 +484,7 @@ Piece.prototype.draw = function(){
         
         ellipse(tile.tileX+24, tile.tileY+24, 40, 40);
         
+        //Determine text color
         if (this.team === "white"){
             stroke(0, 0, 0);
             strokeWeight(1);
@@ -487,8 +497,9 @@ Piece.prototype.draw = function(){
             fill(255, 255, 255);
         }
         
+        //Adjustment for text placement based on length to allow centering
         var textAdjust;
-        if (this.type === "rook" || this.type === "king"){
+        if (this.type === "rook"){
             
             textAdjust = 12;
             
@@ -514,14 +525,39 @@ Piece.prototype.draw = function(){
             
         }
         
-        text(this.type, tile.tileX+textAdjust, tile.tileY+27);
+        //Write name of piece unless the piece is a king
+        if (this.type !== "king"){
+        
+            text(this.type, tile.tileX+textAdjust, tile.tileY+27);
+        
+        }
+        else if (this.type === "king"){
+            
+            //Draw Cam's bitmoji in ellipse for the black king
+            if (this.team === "black"){
+                
+                drawCamBitmoji(tile.tileX+24,tile.tileY+16,22);
+                
+            }
+            
+            //Draw Sean's bitmoji in ellipse for the white king
+            else if(this.team === "white"){
+                
+                drawSeanBitmoji({
+                x:tile.tileX+23,
+                y:tile.tileY+15,
+                h:34,
+                shirtColor:color(67, 183, 204),
+                initials:false});
+                
+            }
+            
+        }
         
     }
-    
-    //rect(this.pawnX, this.pawnY, 47.625, 47.625);
-    
 };
 
+//Function to make tile values easily accessible, I guess this is abstraction
 Piece.prototype.getTile = function(){
     
     var tile = (rows[this.tileRight])[this.tileUp];
@@ -529,6 +565,7 @@ Piece.prototype.getTile = function(){
     
 };
 
+//Function to locate king of whoever's turn it is currently
 var findKing = function(){
     
     var kingPiece = null;
@@ -544,6 +581,7 @@ var findKing = function(){
                 
                 if (checkPiece.team === turn && checkPiece.type === "king"){
                     
+                    //Return the tile object that the king is on
                     return checkTile;
                     
                 }
@@ -552,24 +590,33 @@ var findKing = function(){
     }
 };
 
+//Function to determine validity of pawn's move, returns true if the move is legal
 var pawnCheck = function(currentPiece, targetTile){
     
     var type = currentPiece.type;
     var team = currentPiece.team;
+    
+    //Variable to allow for pawns to only move in their respective direction
     var backwards = 1;
+    
     var turn = currentPiece.team;
     
+    //Determine whose turn it is
     if (team === "black"){
         backwards = -1;
         }
         
+        //Get the current tile value of the piece
         var tile = currentPiece.getTile();
         
+        //Check if the move follows pawn formula
         if(targetTile.tileUp === tile.tileUp+(1*backwards)){
             
+            //Make sure tile is empty
             if (targetTile.piece === null && targetTile.tileRight=== tile.tileRight){
                 return true;
             }
+            //If the tile is not empty, make sure it is an enemy piece one diagonal away
             else if (targetTile.piece !== null){
                 if ((targetTile.piece.team !== turn) && (targetTile.tileRight === tile.tileRight + 1 || targetTile.tileRight === tile.tileRight - 1)){
                     return true;
@@ -578,6 +625,7 @@ var pawnCheck = function(currentPiece, targetTile){
             
         }
         
+        //Allow pawns to move 2 spaces on first turn
         else if((targetTile.tileUp === tile.tileUp+(2*backwards))&&currentPiece.firstTurn === true && targetTile.tileRight === tile.tileRight){
             
             return true;
@@ -585,6 +633,7 @@ var pawnCheck = function(currentPiece, targetTile){
     
 };
 
+//Function to determine validity of bishop's move
 var bishopCheck = function(currentPiece, targetTile){
     
     var type = currentPiece.type;
@@ -593,38 +642,51 @@ var bishopCheck = function(currentPiece, targetTile){
     
     var currentTile = currentPiece.getTile();
         
+        //Determine dx and dy of the move
         var dx = (targetTile.tileRight - currentTile.tileRight);
         var dy = (targetTile.tileUp - currentTile.tileUp);
         
+        //If their absolute values are equivalent, they are moving in a legal diagonal
         if (abs(dx) === abs(dy)){
             
+            //Check which diagonal they are following
             if (dx > 0 && dy > 0){
                 //Up and Right
+                
+                //Farthest the bishop can move is 8 diagonal spaces
                 for (var i = 1; i < 8; i++){
                     
+                    //Check each tile in the given diagonal
                     var checkTile = (((rows[currentTile.tileRight+i])[currentTile.tileUp+i]));
-                    
+                    //If tile is not empty
                     if (checkTile.piece !== null){
                         
+                        //Determine if the tile holds an enemy piece
                         if ((checkTile.piece).team !== turn){
-                                
+                            
+                            //If the tile holds an enemy piece and is the desired tile,
+                            //allow the move
                             if (checkTile === targetTile){
                                 
                                 return true;
                                 
                             }
+                            //If not, the move is blocked, break the loop
                             else{
                                 break;
                             }
                             
                         }
+                        //Break the loop
                         else{
                             break;
                         }
                     
                     }
+                    //If the tile is empty, and the loop didn't break, the move should be valid
                     else{
                         
+                        //Make sure that the desired tile and the tile being checked are the same
                         if (checkTile === targetTile){
                             
                             return true;
@@ -635,6 +697,7 @@ var bishopCheck = function(currentPiece, targetTile){
                 }
             }
             
+            //Same process as above, but different direction
             else if (dx > 0 && dy < 0){
                 //Down and Right
                 
@@ -673,6 +736,7 @@ var bishopCheck = function(currentPiece, targetTile){
                 }
                 
             }
+            //Same process as above, but different direction
             else if (dx < 0 && dy > 0){
                 //Up and Left
                 
@@ -710,6 +774,7 @@ var bishopCheck = function(currentPiece, targetTile){
                     }
                 }
             }
+            //Same process as above, but different direction
             else if (dx < 0 && dy < 0){
                 //Down and Left
                 
@@ -753,6 +818,7 @@ var bishopCheck = function(currentPiece, targetTile){
     
 };
 
+//Same concept as bishop, except left, right, up, or down instead of diagonal
 var rookCheck = function(currentPiece, targetTile){
     
     var type = currentPiece.type;
@@ -851,6 +917,7 @@ var rookCheck = function(currentPiece, targetTile){
     
 };
 
+//Knight legality check
 var knightCheck = function(currentPiece, targetTile){
     
     var type = currentPiece.type;
@@ -859,6 +926,7 @@ var knightCheck = function(currentPiece, targetTile){
     
     var currentTile = currentPiece.getTile();
         
+        //Make sure the target tile is vertical 2 and horizontal 1, or vice versa
         var dx = abs(targetTile.tileRight - currentTile.tileRight);
         var dy = abs(targetTile.tileUp - currentTile.tileUp);
         
@@ -879,11 +947,14 @@ var knightCheck = function(currentPiece, targetTile){
     
 };
 
+//Check king's move
 var kingCheck = function(currentPiece, targetTile){
     
     var type = currentPiece.type;
     var team = currentPiece.team;
     var turn = currentPiece.team;
+    
+    //Make sure that the king is attempting to move to any tile in the 8 tile surrounding area
     
     var currentTile = currentPiece.getTile();
         
@@ -905,10 +976,14 @@ var kingCheck = function(currentPiece, targetTile){
     
 };
 
+//Function to handle moves and legality of all piece
 var checkValidMove = function(currentPiece, targetTile){
     
+    //Check type of piece
     var type = currentPiece.type;
     
+    //Based on type, call respective check functions and simulate the move to see if the move results in checking their own king or not removing the king from check
+    //If both checks pass, the move function is called
     if (type === "pawn"){
         
         if (pawnCheck(currentPiece, targetTile) && currentPiece.simulateMove(currentPiece, targetTile)){
@@ -966,22 +1041,30 @@ var checkValidMove = function(currentPiece, targetTile){
     
 };
 
+//Function to determine if the king is in check
 var isInCheck = function(){
     
+    //Locate current king
     var kingTile = findKing();
     var inCheck = false;
     
+    //Iterate through all tiles
     for (var i = 0; i < rows.length; i++) {
         for (var j = 0; j < rows[i].length; j++) {
             
+            //Check current tile
             var checkTile = (rows[i])[j];
             
+            //If tile is not empty
             if (checkTile.piece !== null) {
                 
+                //Get the piece of that tile
                 var checkPiece = checkTile.piece;
                 
+                //If the piece's team is not the current team
                 if (checkPiece.team !== turn){
                     
+                    //Run through every possible piece, and determine if capturing the king is a legal move. If it is, then the king is in check. Set inCheck to true.
                     if (checkPiece.type === "pawn"){
                         
                         if (pawnCheck(checkPiece, kingTile)){
@@ -1029,29 +1112,36 @@ var isInCheck = function(){
         }
     }
     
+    //Return the inCheck boolean
     return inCheck;
     
 };
 
+//Function to check for checkmate
 var isCheckmate = function(){
     
+    //Set the flag
     checkingCheckmate = true;
+    
     var currentTurn = turn;
     var movesPossible = false;
     
     textAlign(BASELINE);
     
+    //Iterate through all tiles
     for (var i = 0; i < rows.length; i++) {
         
         for (var j = 0; j < rows[i].length; j++) {
             
+            //Set piece to empty
             var piece = null;
             
+            //If the current tile being checked is not empty, set piece to that tile's piece
             if ((rows[i])[j].piece !== null){
                 piece = (rows[i])[j].piece;
             }
             
-            // Consider only pieces of the current player's team
+            //Consider only pieces of the current player's team
             if (piece !== null && piece.team === currentTurn) {
                 
                 // Check all possible moves for the current piece
@@ -1105,34 +1195,42 @@ var isCheckmate = function(){
             }
         }
     }
-    // If no valid move can get the king out of check, it's checkmate
     
-    
+    //If no valid move can get the king out of check, it's checkmate
     return !movesPossible;
     
 };
 
+//Function to move pieces
 Piece.prototype.move = function(newInd, newInd2){
     
+    //New tile of piece being moved
     var newTile = ((rows[newInd])[newInd2]);
     
+    //Old tile of piece being moved
     var oldTile = this.getTile();
     
+    //Remember the piece that's moving
     var tempPiece = oldTile.piece;
     
+    //Remove the selection
     tempPiece.selected = false;
     
+    //Set new indices of the piece
     tempPiece.tileRight = newInd;
-    
     tempPiece.tileUp = newInd2;
     
+    //Remove piece from original tile
     oldTile.piece = null;
     
+    //Set the target tiles piece to the moving piece, either filling in the empty piece property or replacing the enemy team's piece in the situation of a capture
     newTile.piece = tempPiece;
     
+    //Set new indices
     newTile.tileRight = newInd;
     newTile.tileUp = newInd2;
     
+    //Change the turn
     if (turn === "white"){
         turn = "black";
     }
@@ -1140,25 +1238,28 @@ Piece.prototype.move = function(newInd, newInd2){
         turn = "white";
     }
     
+    //Make sure the piece's first turn property is no longer true
     if (this.firstTurn === true){
         this.firstTurn = false;
     }
     
+    //Check if this move is a simulation, refer to simulateMove for more detail
     if (simulation === false){
         checkingCheckmate = false;
     }
-    
-    //isInCheck();
    
 };
 
+//Simulate a move to determine if it results in check
 Piece.prototype.simulateMove = function(piece, targetTile) {
+    
     // Store the original state
     simulation = true;
     var originalTurn = turn;
     var originalTile = piece.getTile();
     var originalPieceAtTarget = null;
     
+    //If the target has a piece, set the originalPieceAtTarget value to that piece
     if (targetTile.piece !== null){
         originalPieceAtTarget = targetTile.piece;
     }
@@ -1166,12 +1267,13 @@ Piece.prototype.simulateMove = function(piece, targetTile) {
     // Apply the move
     piece.move(targetTile.tileRight, targetTile.tileUp);
 
-    // Check the consequences
-    
+    // Check the result
     turn = originalTurn;
+    
+    //Determine if the move resulted in checkmate
     var isInCheckAfterMove = isInCheck();
     
-    // Revert the state
+    // Revert changes
     piece.move(originalTile.tileRight, originalTile.tileUp);
     
     if (originalPieceAtTarget !== null){
@@ -1180,12 +1282,14 @@ Piece.prototype.simulateMove = function(piece, targetTile) {
     
     }
     
+    //End the function
     turn = originalTurn;
     simulation = false;
     return !isInCheckAfterMove;
     
 };
 
+//Function to draw the board itself every frame
 var boardInit = function(){
     
     background(110, 38, 14);
@@ -1219,8 +1323,10 @@ var boardInit = function(){
     
 };
 
+//I think this array was from an unused idea, but I am too nervous to delete it :(
 var letters = ["a", "b", "c", "d", "e", "f", "g", "h"];
 
+//Fill rows array with arrays for columns, creating a 2d array to store tiles
 for (var i = 0; i < 8; i++){
     
     var row = [];
@@ -1231,6 +1337,7 @@ for (var i = 0; i < 8; i++){
         
     }
     
+    //Reverse the column to make the column more usable in other code
     row = row.reverse();
     rows.push(row);
 
@@ -1279,6 +1386,7 @@ for (var i = 0; i < 16; i++){
 ((rows[4])[0]).piece = (new Piece("king", 4,0, "white"));
 ((rows[4])[7]).piece = (new Piece("king", 4,7, "black"));
 
+//Function to get the currently selected piece
 var getSelectedPiece = function() {
     for (var i = 0; i < rows.length; i++) {
         for (var j = 0; j < rows[i].length; j++) {
@@ -1291,6 +1399,7 @@ var getSelectedPiece = function() {
     return null;
 };
 
+//Function to handle clicked piece
 Piece.prototype.onClick = function(){
     
     var tile = this.getTile();
@@ -1305,9 +1414,10 @@ Piece.prototype.onClick = function(){
     }
 
     // Select the current piece
-    
     this.selected = !this.selected;
     }
+    
+    //Make sure checkValidMove is called if an enemy piece is clicked while another piece is selected
     else if(turn !== this.team){
         var selectedPiece = getSelectedPiece();
         
@@ -1317,8 +1427,10 @@ Piece.prototype.onClick = function(){
     }
 };
 
+//Handler for tiles being clicked
 Tile.prototype.onClick = function(){
-    //Check if a piece is selected already
+    
+    //Check if a piece is selected already to then handle a possible move
     for (var i = 0; i < rows.length; i++){
         for (var j = 0; j < (rows[i]).length; j++){
             var currentPiece = (((rows[i])[j]).piece);
@@ -1334,8 +1446,8 @@ Tile.prototype.onClick = function(){
     
 };
 
+//Check for mouse being inside of a pieces boundaries(The tile it's on)
 Piece.prototype.isMouseInside = function() {
-    
     
     var tile = this.getTile();
     
@@ -1345,6 +1457,7 @@ Piece.prototype.isMouseInside = function() {
            mouseY < (tile.tileBottomBound);
 };
 
+//Same check but for tiles
 Tile.prototype.isMouseInside = function() {
     return mouseX > this.tileLeftBound &&
            mouseX < (this.tileRightBound) &&
@@ -1353,6 +1466,7 @@ Tile.prototype.isMouseInside = function() {
     
 };
 
+//Handler for piece clicks
 Piece.prototype.handleMouseClick = function() {
     if (this.isMouseInside()) {
         
@@ -1360,6 +1474,7 @@ Piece.prototype.handleMouseClick = function() {
     }
 };
 
+//Handler for tile clicks
 Tile.prototype.handleMouseClick = function() {
 
     if (this.isMouseInside()) {
@@ -1368,13 +1483,16 @@ Tile.prototype.handleMouseClick = function() {
     
 };
 
+//Function for when the mouse is clicked
 mouseClicked = function() {
     
+    //Handle start button
     if (currentScene === 0){
         
         startButton.handleMouseClick();
         
     }
+    //Handle game clicks
     else if(currentScene === 1){
     for (var i = 0; i < rows.length; i++){
         for (var j = 0; j < (rows[i]).length; j++){
@@ -1395,14 +1513,18 @@ mouseClicked = function() {
     }
 };
 
+//Draw function
 draw = function() {
+    //Draw based on current scene
      if (currentScene === 0) { splashScreen(); }
      else if (currentScene === 2) {endScreen();}
      else if (currentScene ===1) {
          
+         //Draw board
          boardInit();
     fill(255, 255, 255);
     
+    //Draw pieces
     for (var i = 0; i < rows.length; i++){
         for (var j = 0; j < (rows[i]).length; j++){
             if ((((rows[i])[j]).piece) !== null){
@@ -1412,12 +1534,15 @@ draw = function() {
         }
     }
     
+    //Check for checkmate
     if (isInCheck() && !checkingCheckmate){
         if(isCheckmate()){
+            //If checkmated, end the game
             gameEnd = true;
         }
     }
     
+    //If game is over, draw the end screen
     if (gameEnd){
         fill(0, 0, 0);
         rect(104, 171, 4*47.625, 58);
